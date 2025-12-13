@@ -1,5 +1,7 @@
 # Agent SOP: Adding a new wolf_sv_parser_tb case
 
+当人类要求创建 caseNNN 时，即参考本文档操作，在 wolf_sv_parser_tb 目录下创建新的 tb
+
 **Case numbering maps to the plan**  
 Use `caseNNN` where `NNN` matches the plan entry number (e.g., plan #1 → `case001`, plan #37 → `case037`). Keep this 1:1 mapping to avoid confusion.
 
@@ -24,6 +26,7 @@ ${C910_PROJ}/C910_RTL_FACTORY/gen_rtl/vfalu/rtl/ct_fadd_close_s0_d.v
 ## 2) Add TB
 - Create `wolf_sv_parser_tb/caseNNN/tb.cpp`.
 - Include Verilator headers and DUT header, drive stimuli, and call `VerilatedCov::write` (via `verilated_cov.h`) with `COV_OUT` or a default path under `build/caseNNN/coverage.dat`.
+- 验证通过 return 0，验证不通过返回非 0
 
 Minimal skeleton:
 ```cpp
@@ -40,15 +43,15 @@ int main(int argc, char** argv) {
 ```
 
 ## 3) Use the shared Makefile
-- The root `Makefile` expects:
+- The root `Makefile` auto-derives `TOP` from `wolf_sv_parser_tb/plan.md` using the numeric case index → RTL path mapping; just set `CASE`. Only override `TOP` when you intentionally want a different module than the plan entry.
+- Variables:
   - `CASE` (e.g., `001`)
-  - `TOP` (optional; default set inside Makefile)
   - `C910_PROJ` (optional; defaults to repo root)
 - It expands `filelist.f` via `envsubst`, runs Verilator with `--coverage`, builds `sim`, runs it with `COV_OUT` set, then emits `coverage.info`.
 
 Commands:
 ```
-make run CASE=NNN TOP=<dut_name> [C910_PROJ=/path/to/proj]
+make run CASE=NNN [C910_PROJ=/path/to/proj]
 ```
 Artifacts:
 - `build/caseNNN/sim`             : executable

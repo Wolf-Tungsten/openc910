@@ -3,7 +3,10 @@
 CASE ?= 001
 CASE_DIR := $(CURDIR)/wolf_sv_parser_tb/case$(CASE)
 BUILD_DIR := $(CURDIR)/build/case$(CASE)
-TOP ?= ct_fadd_close_s0_d
+PLAN_FILE ?= $(CURDIR)/wolf_sv_parser_tb/plan.md
+CASE_NUM := $(shell echo $(CASE) | sed 's/^0*//')
+TOP_FROM_PLAN := $(shell sed -n '/^$(CASE_NUM)\./s/^[0-9][0-9]*\. *//p' $(PLAN_FILE) | head -n1 | xargs basename | sed 's/\.v$$//')
+TOP ?= $(if $(TOP_FROM_PLAN),$(TOP_FROM_PLAN),ct_fadd_close_s0_d)
 COVER ?= 1
 COV_DAT := $(BUILD_DIR)/coverage.dat
 COV_INFO := $(BUILD_DIR)/coverage.info
