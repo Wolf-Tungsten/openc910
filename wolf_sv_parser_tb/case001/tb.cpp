@@ -30,8 +30,9 @@ int main(int argc, char** argv) {
         {0x7FFFFFFFFFFFFULL, 0x3FFFFFFFFFFFFULL}
     };
 
-    // Sweep single-bit patterns to touch many ff1_pred positions.
-    for (int i = 0; i < 53; i += 4) {
+    // Sweep single-bit patterns across all 53 bits on both operands to cover
+    // every ff1_pred branch and exercise toggle coverage on every position.
+    for (int i = 0; i < 53; ++i) {
         tests.push_back({1ULL << i, 0});
         tests.push_back({0, 1ULL << i});
     }

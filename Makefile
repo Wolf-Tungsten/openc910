@@ -5,14 +5,18 @@ CASE_DIR := $(CURDIR)/wolf_sv_parser_tb/case$(CASE)
 BUILD_DIR := $(CURDIR)/build/case$(CASE)
 TOP ?= ct_fadd_close_s0_d
 COVER ?= 1
+COV_DAT := $(BUILD_DIR)/coverage.dat
+COV_INFO := $(BUILD_DIR)/coverage.info
+COV_ANNOTATE_DIR := $(BUILD_DIR)/annot
 
 # Root for RTL, used inside filelist templates
 C910_PROJ ?= $(CURDIR)
 
 .PHONY: run
 run: $(BUILD_DIR)/sim
-	COV_OUT=$(BUILD_DIR)/coverage.dat $(BUILD_DIR)/sim
-	verilator_coverage --write-info $(BUILD_DIR)/coverage.info $(BUILD_DIR)/coverage.dat
+	COV_OUT=$(COV_DAT) $(BUILD_DIR)/sim
+	verilator_coverage --write-info $(COV_INFO) $(COV_DAT)
+	verilator_coverage --annotate-min 1 --annotate $(COV_ANNOTATE_DIR) $(COV_DAT)
 
 $(BUILD_DIR)/sim: $(CASE_DIR)/filelist.f $(CASE_DIR)/tb.cpp
 	@mkdir -p $(BUILD_DIR)
