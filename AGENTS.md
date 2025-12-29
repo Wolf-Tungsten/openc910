@@ -1,6 +1,8 @@
 # Agent SOP: Adding a new wolf_sv_parser_tb case
 
-当人类要求创建 caseNNN 时，即参考本文档操作，在 wolf_sv_parser_tb 目录下创建新的 tb
+当人类要求创建 caseNNN 时，即参考本文档操作，在 wolf_sv_parser_tb 目录下创建新的 tb；
+新的 tb 必须能正确编译和运行；
+新的 tb 的覆盖率必须达到90%以上。
 
 **Case numbering maps to the plan**  
 Use `caseNNN` where `NNN` matches the plan entry number (e.g., plan #1 → `case001`, plan #37 → `case037`). Keep this 1:1 mapping to avoid confusion.
