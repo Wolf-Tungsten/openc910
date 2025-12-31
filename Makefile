@@ -26,6 +26,7 @@ $(BUILD_DIR)/sim: $(CASE_DIR)/filelist.f $(CASE_DIR)/tb.cpp
 	@C910_PROJ=$(C910_PROJ) envsubst < $(CASE_DIR)/filelist.f > $(BUILD_DIR)/filelist.f
 	CCACHE_DISABLE=1 VERILATOR_NO_CCACHE=1 VERILATOR_CXX=g++ verilator --cc --exe --build -Mdir $(BUILD_DIR) \
 	  $(if $(COVER),--coverage,) \
+	  $(VERILATOR_FLAGS) \
 	  -o $(BUILD_DIR)/sim \
 	  -CFLAGS "-std=c++17" \
 	  --top-module $(TOP) \
