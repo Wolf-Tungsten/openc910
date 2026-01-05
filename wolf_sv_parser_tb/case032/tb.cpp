@@ -5,8 +5,11 @@
 #include "Vct_vfalu_top_pipe7___024root.h"
 #include "Vct_vfalu_top_pipe7__Syms.h"
 
+#include <cfenv>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -14,6 +17,282 @@
 #include <vector>
 
 namespace {
+
+enum class RoundingMode { RNE, RTZ, RDN, RUP, RMM };
+
+struct MaybeExpected {
+    bool has_value{false};
+    uint64_t value{0};
+};
+
+int to_fe_round(RoundingMode mode) {
+    switch (mode) {
+        case RoundingMode::RNE:
+            return FE_TONEAREST;
+        case RoundingMode::RTZ:
+            return FE_TOWARDZERO;
+        case RoundingMode::RDN:
+            return FE_DOWNWARD;
+        case RoundingMode::RUP:
+            return FE_UPWARD;
+        case RoundingMode::RMM:
+        default:
+            return FE_TONEAREST;
+    }
+}
+
+struct RoundingGuard {
+    explicit RoundingGuard(RoundingMode mode) : original(fegetround()) { fesetround(to_fe_round(mode)); }
+    ~RoundingGuard() { fesetround(original); }
+    int original;
+};
+
+uint8_t effective_rm(uint8_t imm, uint8_t rm) { return (imm & 0x7u) == 0x7u ? (rm & 0x7u) : (imm & 0x7u); }
+
+double bits_to_double(uint64_t bits) {
+    double v;
+    std::memcpy(&v, &bits, sizeof(v));
+    return v;
+}
+
+uint64_t double_to_bits(double v) {
+    uint64_t bits;
+    std::memcpy(&bits, &v, sizeof(bits));
+    return bits;
+}
+
+float bits_to_float(uint32_t bits) {
+    float v;
+    std::memcpy(&v, &bits, sizeof(v));
+    return v;
+}
+
+uint32_t float_to_bits(float v) {
+    uint32_t bits;
+    std::memcpy(&bits, &v, sizeof(bits));
+    return bits;
+}
+
+float half_to_float(uint16_t h) {
+    const uint16_t sign = h >> 15;
+    const uint16_t exp = (h >> 10) & 0x1F;
+    const uint16_t frac = h & 0x3FF;
+    uint32_t result = static_cast<uint32_t>(sign) << 31;
+    if (exp == 0x1F) {
+        uint32_t payload = frac ? static_cast<uint32_t>(frac) << 13 : 0;
+        if (payload == 0) payload = 0x400000;  // quiet NaN
+        result |= 0x7F800000u | payload;
+    } else if (exp == 0) {
+        if (frac != 0) {
+            const float mant = static_cast<float>(frac) * std::ldexp(1.0f, -10);
+            float val = std::ldexp(mant, -14);
+            val = sign ? -val : val;
+            return val;
+        }
+    } else {
+        const float mant = 1.0f + static_cast<float>(frac) * std::ldexp(1.0f, -10);
+        float val = std::ldexp(mant, static_cast<int>(exp) - 15);
+        val = sign ? -val : val;
+        return val;
+    }
+    return bits_to_float(result);
+}
+
+uint16_t float_to_half_rne(float f) {
+    const uint32_t bits = float_to_bits(f);
+    const uint32_t sign = bits >> 31;
+    const uint32_t exp = (bits >> 23) & 0xFF;
+    const uint32_t frac = bits & 0x7FFFFF;
+
+    uint16_t hsign = static_cast<uint16_t>(sign) << 15;
+    if (exp == 0xFF) {
+        uint16_t payload = frac ? static_cast<uint16_t>((frac >> 13) | 0x200u) : 0;
+        return static_cast<uint16_t>(hsign | 0x7C00u | payload);
+    }
+
+    int32_t half_exp = static_cast<int32_t>(exp) - 127 + 15;
+    if (half_exp >= 0x1F) {
+        return static_cast<uint16_t>(hsign | 0x7C00u);
+    }
+    if (half_exp <= 0) {
+        if (half_exp < -10) {
+            return hsign;
+        }
+        uint32_t mant = (frac | 0x800000u) >> (1 - half_exp);
+        uint32_t round_bit = mant & 0x00001000u;
+        uint16_t half = static_cast<uint16_t>(hsign | (mant >> 13));
+        if (round_bit && ((mant & 0x00001FFFu) != 0 || (half & 1))) {
+            ++half;
+        }
+        return half;
+    }
+
+    uint32_t mant = frac + 0x00001000u;  // rounding bias
+    if (mant & 0x00800000u) {
+        mant = 0;
+        ++half_exp;
+    }
+    if (half_exp >= 0x1F) {
+        return static_cast<uint16_t>(hsign | 0x7C00u);
+    }
+    return static_cast<uint16_t>(hsign | (static_cast<uint16_t>(half_exp) << 10) | static_cast<uint16_t>(mant >> 13));
+}
+
+uint64_t pack_single_bits(uint32_t bits) { return 0xFFFFFFFF00000000ULL | static_cast<uint64_t>(bits); }
+uint64_t pack_half_bits(uint16_t bits) { return 0xFFFFFFFFFFFF0000ULL | static_cast<uint64_t>(bits); }
+
+uint64_t pack_single_from_double(double value, RoundingMode mode) {
+    RoundingGuard guard(mode);
+    const float narrowed = static_cast<float>(value);
+    return pack_single_bits(float_to_bits(narrowed));
+}
+
+uint64_t pack_single_from_half(uint16_t h) {
+    const float widened = half_to_float(h);
+    return pack_single_bits(float_to_bits(widened));
+}
+
+uint64_t pack_half_from_double(double value, RoundingMode /*mode*/) {
+    const float narrowed = static_cast<float>(value);
+    const uint16_t h = float_to_half_rne(narrowed);
+    return pack_half_bits(h);
+}
+
+uint64_t pack_half_from_single(uint32_t bits, RoundingMode /*mode*/) {
+    const float narrowed = bits_to_float(bits);
+    const uint16_t h = float_to_half_rne(narrowed);
+    return pack_half_bits(h);
+}
+
+int64_t rounded_from_double(double value, RoundingMode mode, bool is_signed) {
+    RoundingGuard guard(mode);
+    if (std::isnan(value)) return 0;
+    if (is_signed) {
+        return static_cast<int64_t>(std::llrint(value));
+    }
+    long double r = std::llrint(value);
+    if (r < 0) return 0;
+    return static_cast<int64_t>(static_cast<uint64_t>(r));
+}
+
+struct FcnvtConfig {
+    bool src_l64;
+    bool src_l32;
+    bool src_l16;
+    bool src_float;
+    bool src_si;
+    bool dest_float;
+    bool dest_si;
+    bool dest_ui;
+    bool dest_l64;
+    bool dest_l32;
+    bool dest_l16;
+    bool dest_double;
+    bool dest_single;
+    bool dest_half;
+};
+
+FcnvtConfig decode_fcnvt(uint32_t func) {
+    const bool widden = (func & (1u << 14)) && !(func & (1u << 13));
+    const bool narrow = !(func & (1u << 14)) && (func & (1u << 13));
+    const bool equal = !(func & (1u << 13)) && !(func & (1u << 14));
+    const bool sover = (func & (1u << 14)) && (func & (1u << 13));
+    const bool src_l64 = (func & (1u << 16)) || ((func & (1u << 15)) && narrow);
+    const bool src_l32 = ((func & (1u << 15)) && !narrow) || (!(func & (1u << 16)) && !(func & (1u << 15)) && narrow);
+    const bool src_l16 = !(func & (1u << 16)) && !(func & (1u << 15)) && !narrow;
+    const bool dest_l64 = (src_l64 && equal) || (src_l32 && widden) || (src_l16 && sover);
+    const bool dest_l32 = (src_l32 && equal) || (src_l16 && widden) || (src_l64 && narrow);
+    const bool dest_l16 = (src_l32 && narrow) || (src_l16 && equal) || (src_l64 && sover);
+    const bool dest_float = func & (1u << 2);
+    const bool dest_si = func & (1u << 3);
+    const bool dest_ui = func & (1u << 4);
+    const bool src_float = func & (1u << 1);
+    const bool src_si = func & 1u;
+
+    const bool dest_double = dest_float && dest_l64;
+    const bool dest_single = dest_float && dest_l32;
+    const bool dest_half = dest_float && dest_l16;
+
+    return {src_l64,
+            src_l32,
+            src_l16,
+            src_float,
+            src_si,
+            dest_float,
+            dest_si,
+            dest_ui,
+            dest_l64,
+            dest_l32,
+            dest_l16,
+            dest_double,
+            dest_single,
+            dest_half};
+}
+
+MaybeExpected compute_fcnvt_expected(const std::string& /*name*/, uint32_t func, uint64_t src, uint8_t imm, uint8_t rm, bool /*dqnan*/) {
+    const auto cfg = decode_fcnvt(func);
+    const bool raw_src_l64 = func & (1u << 16);
+    const bool raw_src_l32 = func & (1u << 15);
+    const RoundingMode mode = static_cast<RoundingMode>(effective_rm(imm, rm));
+    const int dest_float_count = (cfg.dest_double ? 1 : 0) + (cfg.dest_single ? 1 : 0) + (cfg.dest_half ? 1 : 0);
+    if (cfg.dest_float && dest_float_count != 1) {
+        return {};
+    }
+    if (cfg.src_float && raw_src_l32 && cfg.src_l64) {
+        return {};
+    }
+    if (!cfg.src_float && !raw_src_l64 && !raw_src_l32) {
+        return {};
+    }
+    double source_value = 0.0;
+    if (cfg.src_float) {
+        if (raw_src_l64) {
+            source_value = bits_to_double(src);
+        } else if (raw_src_l32) {
+            source_value = static_cast<double>(bits_to_float(static_cast<uint32_t>(src)));
+        } else {
+            source_value = static_cast<double>(half_to_float(static_cast<uint16_t>(src)));
+        }
+    } else {
+        if (raw_src_l64) {
+            source_value = cfg.src_si ? static_cast<double>(static_cast<int64_t>(src)) : static_cast<double>(src);
+        } else if (raw_src_l32) {
+            const uint32_t raw = static_cast<uint32_t>(src);
+            source_value = cfg.src_si ? static_cast<double>(static_cast<int32_t>(raw)) : static_cast<double>(raw);
+        } else {
+            const uint16_t raw = static_cast<uint16_t>(src);
+            source_value = cfg.src_si ? static_cast<double>(static_cast<int16_t>(raw)) : static_cast<double>(raw);
+        }
+    }
+
+    if (cfg.dest_float) {
+        if (cfg.dest_double) {
+            return {true, double_to_bits(source_value)};
+        }
+        if (cfg.dest_single) {
+            return {true, pack_single_from_double(source_value, mode)};
+        }
+        if (cfg.dest_half) {
+            return {true, pack_half_from_double(source_value, mode)};
+        }
+    } else if (cfg.dest_si || cfg.dest_ui) {
+        if (std::isnan(source_value) || std::isinf(source_value)) {
+            return {};
+        }
+        const int64_t rounded = rounded_from_double(source_value, mode, cfg.dest_si);
+        uint64_t widened = static_cast<uint64_t>(rounded);
+        if (cfg.dest_l16) {
+            widened = cfg.dest_si ? static_cast<uint64_t>(static_cast<int64_t>(static_cast<int16_t>(rounded)))
+                                  : static_cast<uint64_t>(static_cast<uint16_t>(rounded));
+        } else if (cfg.dest_l32) {
+            widened = cfg.dest_si ? static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(rounded)))
+                                  : static_cast<uint64_t>(static_cast<uint32_t>(rounded));
+        }
+        return {true, widened};
+    }
+
+    return {};
+}
 
 void tick(Vct_vfalu_top_pipe7& dut) {
     dut.forever_cpuclk = 0;
@@ -488,7 +767,20 @@ int main(int argc, char** argv) {
         tick(dut);
         dut.dp_vfalu_ex1_pipex_sel = 0;
         tick(dut);
-        if (!expect(dut.pipex_dp_ex3_vfalu_freg_data != 0 || !expect_nonzero, std::string(name) + " result stuck zero")) return false;
+        const MaybeExpected expected = compute_fcnvt_expected(name, func, src, imm, rm, dqnan);
+        const uint64_t got = dut.pipex_dp_ex3_vfalu_freg_data;
+        if (expected.has_value) {
+            if (!expect(got == expected.value,
+                        std::string(name) + " result mismatch got 0x" + [&]() {
+                            std::ostringstream oss;
+                            oss << std::hex << got << " expected 0x" << expected.value;
+                            return oss.str();
+                        }())) {
+                return false;
+            }
+        } else if (!expect(got != 0 || !expect_nonzero, std::string(name) + " result stuck zero")) {
+            return false;
+        }
         tick(dut);
         return true;
     };
@@ -802,6 +1094,60 @@ int main(int argc, char** argv) {
         tick(dut);
     }
 
+    const std::vector<std::pair<uint64_t, uint64_t>> fadd_overflow_cases = {
+        {0x7FEFFFFFFFFFFFFFULL, 0x7FEFFFFFFFFFFFFFULL},
+        {0x7FF0000000000000ULL, 0x3FF0000000000000ULL},
+        {0x7FF0000000000001ULL, 0x3FF0000000000000ULL},
+    };
+    const std::vector<std::pair<uint64_t, uint64_t>> fadd_half_overflow_cases = {
+        {fadd::pack_half(0x7BFF), fadd::pack_half(0x7BFF)},
+        {fadd::pack_half(0x7C00), fadd::pack_half(0x3C00)},
+        {fadd::pack_half(0x7C01), fadd::pack_half(0x3C00)},
+    };
+    for (int rep = 0; rep < 3; ++rep) {
+        for (auto [a, b] : fadd_overflow_cases) {
+            drive_fadd_no_check(func_double_add, a, b);
+            drive_fadd_no_check(func_double_sub, a, b);
+        }
+        for (auto [a, b] : fadd_half_overflow_cases) {
+            drive_fadd_no_check(func_half_add, a, b);
+            drive_fadd_no_check(func_half_sub, a, b);
+        }
+    }
+
+    for (int repeat = 0; repeat < 2; ++repeat) {
+        for (const auto& sc : fadd_basic) {
+            if (!run_fadd(sc)) return 1;
+        }
+        if (!run_fadd({"double_maxnm_repeat", fadd::make_func(true, false, false, false, false, true, false, 0), 0xBFF0000000000000ULL, 0x4008000000000000ULL, 0x4008000000000000ULL, 0})) return 1;
+        if (!run_fadd({"single_minnm_repeat", fadd::make_func(false, true, false, false, false, false, true, 0), fadd::pack_single(0x7F800000), fadd::pack_single(0x3F000000), fadd::pack_single(0x3F000000), 0})) return 1;
+        if (!run_fadd({"half_maxnm_repeat", fadd::make_func(false, false, false, false, false, true, false, 0), fadd::pack_half(0xFC00), fadd::pack_half(0x3C00), fadd::pack_half(0x3C00), 0})) return 1;
+
+        if (!run_cmp("cmp_feq_single_repeat", fadd::make_func(false, true, false, false, true, false, false, 0b00001), fadd::pack_single(0x3F800000), fadd::pack_single(0x3F800000), 1)) return 1;
+        if (!run_cmp("cmp_flt_double_repeat", fadd::make_func(true, false, false, false, true, false, false, 0b00010), 0x3FF0000000000000ULL, 0x4008000000000000ULL, 1)) return 1;
+        if (!run_cmp("cmp_fle_half_repeat", fadd::make_func(false, false, false, false, true, false, false, 0b00100), fadd::pack_half(0x3800), fadd::pack_half(0x3C00), 1)) return 1;
+
+        dut.vfpu_yy_xx_rm = 0;
+        if (!run_fadd(rounding[0])) return 1;
+        if (!run_fadd(rounding[1])) return 1;
+        dut.vfpu_yy_xx_rm = 0b011;
+        if (!run_fadd(rounding[2])) return 1;
+        dut.vfpu_yy_xx_rm = 0b100;
+        if (!run_fadd(rounding[3])) return 1;
+        dut.vfpu_yy_xx_rm = 0;
+
+        dut.vfpu_yy_xx_dqnan = 1;
+        if (!run_fadd({"single_nan_add_repeat", fadd::make_func(false, true, true, false, false, false, false, 0), fadd::pack_single(0x7FC00001), fadd::pack_single(0x3F800000), fadd::pack_single(0x7FC00001), 0})) return 1;
+        dut.vfpu_yy_xx_dqnan = 0;
+
+        for (const auto& sc : fspu_scenarios) {
+            if (!run_fspu(sc)) return 1;
+        }
+        for (const auto& entry : fcnvt_cases) {
+            if (!run_fcnvt(std::get<0>(entry), std::get<1>(entry), std::get<2>(entry), std::get<3>(entry), std::get<4>(entry), std::get<5>(entry), std::get<6>(entry))) return 1;
+        }
+    }
+
     dut.cp0_yy_clk_en = 0;
     tick(dut);
     dut.cp0_yy_clk_en = 1;
@@ -822,12 +1168,6 @@ int main(int argc, char** argv) {
         const uint64_t a = fadd::pack_half(static_cast<uint16_t>(0x3C00u | frac));  // +1.frac
         const uint64_t b = fadd::pack_half(static_cast<uint16_t>(0xBC00u));         // -1.0
         drive_fadd_no_check(func_half_add, a, b);
-    }
-
-    for (auto& cov : dut.rootp->vlSymsp->__Vcoverage) {
-        if (cov == 0) {
-            cov = 1;
-        }
     }
 
     const char* cov_out = std::getenv("COV_OUT");
