@@ -11,13 +11,15 @@
 
 namespace {
 
+constexpr uint64_t kFracMask = (1ULL << 52) - 1;
+
 struct Expected {
     uint64_t shift_num;
     uint16_t bin_val;
 };
 
 Expected compute_expected(uint64_t frac) {
-    if ((frac & ((1ULL << 52) - 1)) == 0) {
+    if ((frac & kFracMask) == 0) {
         return {0, 0x1fcc};
     }
     int msb = -1;
@@ -28,27 +30,29 @@ Expected compute_expected(uint64_t frac) {
         }
     }
     if (msb == 51) {
-        return {frac & ((1ULL << 52) - 1), 0};
+        return {frac & kFracMask, 0};
     }
     const uint16_t bin = static_cast<uint16_t>(0x1fff - (50 - msb));
     const int shift = 51 - msb;
-    const uint64_t mask52 = (1ULL << 52) - 1;
-    const uint64_t shifted = (frac & mask52) << shift;
-    return {shifted & mask52, bin};
+    const uint64_t shifted = (frac & kFracMask) << shift;
+    return {shifted & kFracMask, bin};
 }
 
-bool run_case(Vct_vfdsu_ff1& dut, uint64_t frac, const std::string& name) {
-    dut.frac_num = frac & ((1ULL << 52) - 1);
+bool run_case(Vct_vfdsu_ff1& dut, uint64_t frac, const std::string& name, int& total, int& failed) {
+    ++total;
+    const uint64_t masked = frac & kFracMask;
+    dut.frac_num = masked;
     dut.eval();
-    Expected exp = compute_expected(frac);
-    if (dut.fanc_shift_num != exp.shift_num) {
-        std::cerr << name << " shift mismatch got 0x" << std::hex << dut.fanc_shift_num << " expected 0x" << exp.shift_num << std::dec << "\n";
+    Expected exp = compute_expected(masked);
+    const bool shift_ok = dut.fanc_shift_num == exp.shift_num;
+    const bool bin_ok = dut.frac_bin_val == exp.bin_val;
+    if (!shift_ok || !bin_ok) {
+        ++failed;
+        std::cerr << "[FAIL] " << name << " shift=0x" << std::hex << dut.fanc_shift_num << " (exp 0x" << exp.shift_num
+                  << ") bin=0x" << dut.frac_bin_val << " (exp 0x" << exp.bin_val << ")" << std::dec << "\n";
         return false;
     }
-    if (dut.frac_bin_val != exp.bin_val) {
-        std::cerr << name << " bin mismatch got 0x" << std::hex << dut.frac_bin_val << " expected 0x" << exp.bin_val << std::dec << "\n";
-        return false;
-    }
+    std::cout << "[PASS] " << name << " shift=0x" << std::hex << dut.fanc_shift_num << " bin=0x" << dut.frac_bin_val << std::dec << "\n";
     return true;
 }
 
@@ -57,11 +61,13 @@ bool run_case(Vct_vfdsu_ff1& dut, uint64_t frac, const std::string& name) {
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Vct_vfdsu_ff1 dut;
+    int total = 0;
+    int failed = 0;
 
     // Directed: single hot bit for every position plus zero.
-    if (!run_case(dut, 0, "all_zero")) return 1;
+    run_case(dut, 0, "all_zero", total, failed);
     for (int i = 0; i < 52; ++i) {
-        if (!run_case(dut, 1ULL << i, "bit_" + std::to_string(i))) return 1;
+        run_case(dut, 1ULL << i, "bit_" + std::to_string(i), total, failed);
     }
     // Mixed patterns: alternating bits with a defined leading 1.
     std::array<uint64_t, 5> patterns = {
@@ -71,7 +77,7 @@ int main(int argc, char** argv) {
         0x0F0F0F0F0F0FULL,
         0x00F000000000ULL};
     for (size_t idx = 0; idx < patterns.size(); ++idx) {
-        if (!run_case(dut, patterns[idx], "pattern_" + std::to_string(idx))) return 1;
+        run_case(dut, patterns[idx], "pattern_" + std::to_string(idx), total, failed);
     }
 
     // Randomized sweep.
@@ -82,7 +88,7 @@ int main(int argc, char** argv) {
     };
     for (int i = 0; i < 1000; ++i) {
         uint64_t frac = next() & ((1ULL << 52) - 1);
-        if (!run_case(dut, frac, "rand_" + std::to_string(i))) return 1;
+        run_case(dut, frac, "rand_" + std::to_string(i), total, failed);
     }
 
     const char* cov_out = std::getenv("COV_OUT");
@@ -90,5 +96,11 @@ int main(int argc, char** argv) {
         cov_out = "build/case033/coverage.dat";
     }
     VerilatedCov::write(cov_out);
-    return 0;
+    const int passed = total - failed;
+    if (failed == 0) {
+        std::cout << "[RESULT] PASS (" << passed << "/" << total << ")\n";
+        return 0;
+    }
+    std::cerr << "[RESULT] FAIL (" << passed << "/" << total << ")\n";
+    return 1;
 }

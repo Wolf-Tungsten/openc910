@@ -7,7 +7,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -77,6 +79,17 @@ struct Expected {
     bool is_double;
     bool is_single;
 };
+
+template <typename T>
+std::string fmt(const T& v) {
+    std::ostringstream oss;
+    if constexpr (std::is_same_v<T, bool>) {
+        oss << (v ? 1 : 0);
+    } else {
+        oss << "0x" << std::hex << static_cast<unsigned long long>(v);
+    }
+    return oss.str();
+}
 
 uint64_t get_bits(uint64_t v, int hi, int lo) {
     const int width = hi - lo + 1;
@@ -253,7 +266,8 @@ Expected compute_expected(const Scenario& sc) {
         is_single};
 }
 
-bool drive_and_check(Vct_vfdsu_prepare& dut, const Scenario& sc) {
+bool drive_and_check(Vct_vfdsu_prepare& dut, const Scenario& sc, int& total, int& failed) {
+    ++total;
     const Expected exp = compute_expected(sc);
 
     dut.ex1_div = sc.ex1_div;
@@ -272,33 +286,42 @@ bool drive_and_check(Vct_vfdsu_prepare& dut, const Scenario& sc) {
     dut.ex1_pipedown = 0;
     tick(dut);
 
-    auto expect = [&](bool cond, const std::string& msg) {
-        if (!cond) std::cerr << msg << "\n";
-        return cond;
+    auto expect = [&](auto got, auto expected, const std::string& msg) {
+        if (got != expected) {
+            std::cerr << "[FAIL] " << sc.name << " " << msg << " got=" << fmt(got) << " expected=" << fmt(expected) << "\n";
+            return false;
+        }
+        return true;
     };
 
     bool ok = true;
-    ok &= expect(dut.ex1_divisor == exp.divisor, std::string(sc.name) + " divisor mismatch");
-    ok &= expect(dut.ex1_remainder == exp.remainder, std::string(sc.name) + " remainder mismatch");
-    ok &= expect(dut.vfdsu_ex2_result_zero == exp.result_zero, std::string(sc.name) + " result_zero mismatch");
-    ok &= expect(dut.vfdsu_ex2_result_qnan == exp.result_qnan, std::string(sc.name) + " result_qnan mismatch");
-    ok &= expect(dut.vfdsu_ex2_result_inf == exp.result_inf, std::string(sc.name) + " result_inf mismatch");
-    ok &= expect(dut.vfdsu_ex2_result_sign == exp.result_sign, std::string(sc.name) + " result_sign mismatch");
-    ok &= expect(dut.vfdsu_ex2_op0_norm == exp.op0_norm, std::string(sc.name) + " op0_norm mismatch");
-    ok &= expect(dut.vfdsu_ex2_op1_norm == exp.op1_norm, std::string(sc.name) + " op1_norm mismatch");
-    ok &= expect(dut.vfdsu_ex2_expnt_add0 == exp.expnt_add0, std::string(sc.name) + " expnt_add0 mismatch");
-    ok &= expect(dut.vfdsu_ex2_expnt_add1 == exp.expnt_add1, std::string(sc.name) + " expnt_add1 mismatch");
-    ok &= expect(dut.vfdsu_ex2_nv == exp.nv, std::string(sc.name) + " nv mismatch");
-    ok &= expect(dut.vfdsu_ex2_dz == exp.dz, std::string(sc.name) + " dz mismatch");
-    ok &= expect(dut.vfdsu_ex2_srt_skip == exp.srt_skip, std::string(sc.name) + " srt_skip mismatch");
-    ok &= expect(dut.vfdsu_ex2_of_rm_lfn == exp.of_rm_lfn, std::string(sc.name) + " of_rm_lfn mismatch");
-    ok &= expect(dut.vfdsu_ex2_qnan_sign == exp.qnan_sign, std::string(sc.name) + " qnan_sign mismatch");
-    ok &= expect(dut.vfdsu_ex2_qnan_f == exp.qnan_f, std::string(sc.name) + " qnan_f mismatch");
-    ok &= expect(dut.vfdsu_ex2_rm == exp.rm, std::string(sc.name) + " rm mismatch");
-    ok &= expect(dut.vfdsu_ex2_div == exp.div, std::string(sc.name) + " div mismatch");
-    ok &= expect(dut.vfdsu_ex2_sqrt == exp.sqrt, std::string(sc.name) + " sqrt mismatch");
-    ok &= expect(dut.vfdsu_ex2_double == exp.is_double, std::string(sc.name) + " double mismatch");
-    ok &= expect(dut.vfdsu_ex2_single == exp.is_single, std::string(sc.name) + " single mismatch");
+    ok &= expect(dut.ex1_divisor, exp.divisor, "divisor mismatch");
+    ok &= expect(dut.ex1_remainder, exp.remainder, "remainder mismatch");
+    ok &= expect(dut.vfdsu_ex2_result_zero, exp.result_zero, "result_zero mismatch");
+    ok &= expect(dut.vfdsu_ex2_result_qnan, exp.result_qnan, "result_qnan mismatch");
+    ok &= expect(dut.vfdsu_ex2_result_inf, exp.result_inf, "result_inf mismatch");
+    ok &= expect(dut.vfdsu_ex2_result_sign, exp.result_sign, "result_sign mismatch");
+    ok &= expect(dut.vfdsu_ex2_op0_norm, exp.op0_norm, "op0_norm mismatch");
+    ok &= expect(dut.vfdsu_ex2_op1_norm, exp.op1_norm, "op1_norm mismatch");
+    ok &= expect(dut.vfdsu_ex2_expnt_add0, exp.expnt_add0, "expnt_add0 mismatch");
+    ok &= expect(dut.vfdsu_ex2_expnt_add1, exp.expnt_add1, "expnt_add1 mismatch");
+    ok &= expect(dut.vfdsu_ex2_nv, exp.nv, "nv mismatch");
+    ok &= expect(dut.vfdsu_ex2_dz, exp.dz, "dz mismatch");
+    ok &= expect(dut.vfdsu_ex2_srt_skip, exp.srt_skip, "srt_skip mismatch");
+    ok &= expect(dut.vfdsu_ex2_of_rm_lfn, exp.of_rm_lfn, "of_rm_lfn mismatch");
+    ok &= expect(dut.vfdsu_ex2_qnan_sign, exp.qnan_sign, "qnan_sign mismatch");
+    ok &= expect(dut.vfdsu_ex2_qnan_f, exp.qnan_f, "qnan_f mismatch");
+    ok &= expect(dut.vfdsu_ex2_rm, exp.rm, "rm mismatch");
+    ok &= expect(dut.vfdsu_ex2_div, exp.div, "div mismatch");
+    ok &= expect(dut.vfdsu_ex2_sqrt, exp.sqrt, "sqrt mismatch");
+    ok &= expect(dut.vfdsu_ex2_double, exp.is_double, "double mismatch");
+    ok &= expect(dut.vfdsu_ex2_single, exp.is_single, "single mismatch");
+    if (ok) {
+        std::cout << "[PASS] " << sc.name << "\n";
+    } else {
+        ++failed;
+        std::cerr << "[RESULT] " << sc.name << " FAILED\n";
+    }
     return ok;
 }
 
@@ -307,6 +330,8 @@ bool drive_and_check(Vct_vfdsu_prepare& dut, const Scenario& sc) {
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Vct_vfdsu_prepare dut;
+    int total = 0;
+    int failed = 0;
 
     dut.cp0_vfpu_icg_en = 1;
     dut.cp0_yy_clk_en = 1;
@@ -331,6 +356,8 @@ int main(int argc, char** argv) {
         {"div_op1_snan_dqnan", true, false, false, true, true, 0x3F800000ULL, 0xFFFFFFFF7FA00001ULL, 0, 2, true},
         {"div_op1_qnan_dqnan", true, false, false, true, true, 0x3F800000ULL, 0xFFFFFFFF7FC00001ULL, 0, 3, true},
         {"rm_rdn_negative", true, false, true, false, true, 0xBFF8000000000000ULL, 0x3FF0000000000000ULL, 3, 4, false},
+        {"div_op1_snan_double_dqnan", true, false, true, false, true, 0x3FF0000000000000ULL, 0xFFF4000000000000ULL, 0, 0, true},
+        {"div_op1_qnan_double_dqnan", true, false, true, false, true, 0x3FF0000000000000ULL, 0xFFF8000000000001ULL, 0, 0, true},
     };
 
     for (int bit = 0; bit < 52; ++bit) {
@@ -340,7 +367,7 @@ int main(int argc, char** argv) {
     }
 
     for (const auto& sc : scenarios) {
-        if (!drive_and_check(dut, sc)) return 1;
+        drive_and_check(dut, sc, total, failed);
     }
 
     uint64_t lcg = 23;
@@ -366,7 +393,7 @@ int main(int argc, char** argv) {
             sc.ex1_sqrt = false;
         }
         if (sc.ex1_double && sc.ex1_single) sc.ex1_single = false;
-        if (!drive_and_check(dut, sc)) return 1;
+        drive_and_check(dut, sc, total, failed);
     }
 
     const char* cov_out = std::getenv("COV_OUT");
@@ -374,5 +401,11 @@ int main(int argc, char** argv) {
         cov_out = "build/case034/coverage.dat";
     }
     VerilatedCov::write(cov_out);
-    return 0;
+    const int passed = total - failed;
+    if (failed == 0) {
+        std::cout << "[RESULT] PASS (" << passed << "/" << total << ")\n";
+        return 0;
+    }
+    std::cerr << "[RESULT] FAIL (" << passed << "/" << total << ")\n";
+    return 1;
 }
