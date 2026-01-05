@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -23,6 +24,49 @@ enum class RoundingMode { RNE, RTZ, RDN, RUP, RMM };
 struct MaybeExpected {
     bool has_value{false};
     uint64_t value{0};
+};
+
+struct CheckLogger {
+    size_t pass{0};
+    size_t fail{0};
+    struct Info {
+        size_t count{0};
+        size_t fail{0};
+    };
+    std::unordered_map<std::string, Info> records;
+
+    void record(const std::string& name, bool ok, const std::string& detail = {}) {
+        auto& entry = records[name];
+        entry.count++;
+        if (!ok) entry.fail++;
+        if (ok) {
+            ++pass;
+        } else {
+            ++fail;
+        }
+
+        const bool should_log = !ok || entry.count == 1;
+        if (should_log) {
+            std::cout << (ok ? "[PASS] " : "[FAIL] ") << name << " (#" << entry.count << ")";
+            if (!detail.empty()) {
+                std::cout << " " << detail;
+            }
+            std::cout << "\n";
+        }
+    }
+
+    void summary() const {
+        const size_t total = pass + fail;
+        std::cout << "[SUMMARY] checks=" << total << " pass=" << pass << " fail=" << fail << "\n";
+        if (fail > 0) {
+            std::cout << "[SUMMARY] failing scenarios:\n";
+            for (const auto& kv : records) {
+                if (kv.second.fail > 0) {
+                    std::cout << "  " << kv.first << " fail=" << kv.second.fail << "/" << kv.second.count << "\n";
+                }
+            }
+        }
+    }
 };
 
 int to_fe_round(RoundingMode mode) {
@@ -629,6 +673,7 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
 
     Vct_vfalu_top_pipe7 dut;
+    CheckLogger logger;
 
     auto expect = [&](bool cond, const std::string& msg) {
         if (!cond) {
@@ -656,6 +701,8 @@ int main(int argc, char** argv) {
     tick(dut);
 
     auto run_fadd = [&](const fadd::Scenario& sc, bool check_expected = true) -> bool {
+        bool ok = true;
+        std::string detail;
         dut.dp_vfalu_ex1_pipex_func = sc.func;
         dut.dp_vfalu_ex1_pipex_srcf0 = sc.src0;
         dut.dp_vfalu_ex1_pipex_srcf1 = sc.src1;
@@ -672,13 +719,21 @@ int main(int argc, char** argv) {
                         oss << std::hex << dut.pipex_dp_ex3_vfalu_freg_data << " expected 0x" << sc.expected;
                         return oss.str();
                     }())) {
-            return false;
+            ok = false;
+            std::ostringstream oss;
+            oss << "got 0x" << std::hex << dut.pipex_dp_ex3_vfalu_freg_data << " expected 0x" << sc.expected;
+            detail = oss.str();
         }
         tick(dut);
-        return true;
+        if (check_expected) {
+            logger.record(sc.name, ok, detail);
+        }
+        return ok;
     };
 
     auto run_cmp = [&](const char* name, uint32_t func, uint64_t s0, uint64_t s1, uint64_t expected_cmp) -> bool {
+        bool ok = true;
+        std::string detail;
         dut.dp_vfalu_ex1_pipex_func = func;
         dut.dp_vfalu_ex1_pipex_srcf0 = s0;
         dut.dp_vfalu_ex1_pipex_srcf1 = s1;
@@ -695,10 +750,14 @@ int main(int argc, char** argv) {
                         oss << std::hex << mfvr << " expected 0x" << expected_cmp;
                         return oss.str();
                     }())) {
-            return false;
+            ok = false;
+            std::ostringstream oss;
+            oss << "got 0x" << std::hex << mfvr << " expected 0x" << expected_cmp;
+            detail = oss.str();
         }
         tick(dut);
-        return true;
+        logger.record(name, ok, detail);
+        return ok;
     };
 
     auto drive_fadd_no_check = [&](uint32_t func, uint64_t s0, uint64_t s1, uint8_t imm = 0, uint8_t rm = 0) {
@@ -715,6 +774,8 @@ int main(int argc, char** argv) {
     };
 
     auto run_fspu = [&](const fspu::Scenario& sc) -> bool {
+        bool ok = true;
+        std::string detail;
         const fspu::Expected exp = fspu::compute_expected(sc);
         dut.dp_vfalu_ex1_pipex_func = sc.func;
         dut.dp_vfalu_ex1_pipex_srcf0 = sc.src0;
@@ -731,7 +792,10 @@ int main(int argc, char** argv) {
                         oss << std::hex << dut.pipex_dp_ex3_vfalu_freg_data << " expected 0x" << exp.result;
                         return oss.str();
                     }())) {
-            return false;
+            ok = false;
+            std::ostringstream oss;
+            oss << "result got 0x" << std::hex << dut.pipex_dp_ex3_vfalu_freg_data << " expected 0x" << exp.result;
+            detail = oss.str();
         }
         if (!expect(mfvr == exp.mfvr,
                     std::string(sc.name) + " mfvr mismatch got 0x" + [&]() {
@@ -739,10 +803,16 @@ int main(int argc, char** argv) {
                         oss << std::hex << mfvr << " expected 0x" << exp.mfvr;
                         return oss.str();
                     }())) {
-            return false;
+            ok = false;
+            if (detail.empty()) {
+                std::ostringstream oss;
+                oss << "mfvr got 0x" << std::hex << mfvr << " expected 0x" << exp.mfvr;
+                detail = oss.str();
+            }
         }
         tick(dut);
-        return true;
+        logger.record(sc.name, ok, detail);
+        return ok;
     };
 
     auto drive_fspu_no_check = [&](uint32_t func, uint64_t s0, uint64_t s1, uint64_t mtvr) {
@@ -758,6 +828,8 @@ int main(int argc, char** argv) {
     };
 
     auto run_fcnvt = [&](const char* name, uint32_t func, uint64_t src, uint8_t imm, uint8_t rm, bool dqnan, bool expect_nonzero) -> bool {
+        bool ok = true;
+        std::string detail;
         dut.dp_vfalu_ex1_pipex_func = func;
         dut.dp_vfalu_ex1_pipex_srcf0 = src;
         dut.dp_vfalu_ex1_pipex_imm0 = imm & 0x7;
@@ -776,13 +848,18 @@ int main(int argc, char** argv) {
                             oss << std::hex << got << " expected 0x" << expected.value;
                             return oss.str();
                         }())) {
-                return false;
+                ok = false;
+                std::ostringstream oss;
+                oss << "got 0x" << std::hex << got << " expected 0x" << expected.value;
+                detail = oss.str();
             }
         } else if (!expect(got != 0 || !expect_nonzero, std::string(name) + " result stuck zero")) {
-            return false;
+            ok = false;
+            detail = "result stuck zero";
         }
         tick(dut);
-        return true;
+        logger.record(name, ok, detail);
+        return ok;
     };
 
     std::vector<fadd::Scenario> fadd_basic = {
@@ -1169,6 +1246,8 @@ int main(int argc, char** argv) {
         const uint64_t b = fadd::pack_half(static_cast<uint16_t>(0xBC00u));         // -1.0
         drive_fadd_no_check(func_half_add, a, b);
     }
+
+    logger.summary();
 
     const char* cov_out = std::getenv("COV_OUT");
     if (!cov_out) {

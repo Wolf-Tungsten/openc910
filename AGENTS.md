@@ -29,6 +29,7 @@ ${C910_PROJ}/C910_RTL_FACTORY/gen_rtl/vfalu/rtl/ct_fadd_close_s0_d.v
 - Create `wolf_sv_parser_tb/caseNNN/tb.cpp`.
 - Include Verilator headers and DUT header, drive stimuli, and call `VerilatedCov::write` (via `verilated_cov.h`) with `COV_OUT` or a default path under `build/caseNNN/coverage.dat`.
 - 验证通过 return 0，验证不通过返回非 0
+- TB 里需要输出检查日志，清晰标注每个检查的通过/失败状态（便于阅读运行结果）。
 
 Minimal skeleton:
 ```cpp
