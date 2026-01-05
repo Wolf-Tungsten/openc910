@@ -785,27 +785,18 @@ int main(int argc, char** argv) {
         tick(dut);
     }
 
-    {
-        auto& root = *dut.rootp;
-        auto poke_close_d = [&](uint64_t& signal) {
-            for (int bit = 0; bit < 54; ++bit) {
-                signal = 1ULL << bit;
-                root.__VicoTriggered.setBit(0U, true);
-                dut.eval();
-            }
-        };
-        poke_close_d(root.ct_vfalu_top_pipe6__DOT__x_ct_fadd_top__DOT__x_ct_fadd_double_dp__DOT__x_ct_fadd_close_s1_d_a__DOT__close_ff1_f_t0);
-        poke_close_d(root.ct_vfalu_top_pipe6__DOT__x_ct_fadd_top__DOT__x_ct_fadd_double_dp__DOT__x_ct_fadd_close_s1_d_b__DOT__close_ff1_f_t0);
-
-        auto poke_close_h = [&](uint16_t& signal) {
-            for (int bit = 0; bit < 12; ++bit) {
-                signal = static_cast<uint16_t>(1u << bit);
-                root.__VicoTriggered.setBit(0U, true);
-                dut.eval();
-            }
-        };
-        poke_close_h(root.ct_vfalu_top_pipe6__DOT__x_ct_fadd_top__DOT__x_ct_fadd_double_half_dp__DOT__x_ct_fadd_close_s1_h_a__DOT__close_ff1_f_t0);
-        poke_close_h(root.ct_vfalu_top_pipe6__DOT__x_ct_fadd_top__DOT__x_ct_fadd_double_half_dp__DOT__x_ct_fadd_close_s1_h_b__DOT__close_ff1_f_t0);
+    // Near-cancel sweeps to exercise close/ff1 paths via normal interfaces
+    for (int bit = 0; bit < 52; ++bit) {
+        const uint64_t frac = 1ULL << bit;
+        const uint64_t a = 0x3FF0000000000000ULL | frac;   // +1.frac
+        const uint64_t b = 0xBFF0000000000000ULL;          // -1.0
+        drive_fadd_no_check(func_double_add, a, b);        // result ~2^-bit
+    }
+    for (int bit = 0; bit < 10; ++bit) {
+        const uint16_t frac = static_cast<uint16_t>(1u << bit);
+        const uint64_t a = fadd::pack_half(static_cast<uint16_t>(0x3C00u | frac));  // +1.frac
+        const uint64_t b = fadd::pack_half(static_cast<uint16_t>(0xBC00u));         // -1.0
+        drive_fadd_no_check(func_half_add, a, b);
     }
 
     for (auto& cov : dut.rootp->vlSymsp->__Vcoverage) {
