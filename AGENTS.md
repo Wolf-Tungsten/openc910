@@ -1,7 +1,7 @@
 # Agent SOP: Adding a new wolf_sv_parser_tb case
 
 当人类要求创建 caseNNN 时，即参考本文档操作，在 wolf_sv_parser_tb 目录下创建新的 tb；
-新的 tb 必须能正确编译和运行；
+新的 tb 必须能正确编译和运行，并包含对 DUT 行为的正确性校验（不要仅依赖覆盖率回填）；
 新的 tb 的覆盖率必须达到90%以上。
 
 **Case numbering maps to the plan**  
