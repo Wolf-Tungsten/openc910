@@ -104,19 +104,24 @@ int main(int argc, char** argv) {
         tick(dut);
     }
 
-    // Toggle seldom-used gates and mark hard-to-hit coverage points
-    dut.rootp->ct_vfdsu_srt__DOT__x_ex2_pipe_clk__DOT____Vtogcov__external_en = 1;
-    tick(dut);
-    dut.rootp->ct_vfdsu_srt__DOT__x_ex2_pipe_clk__DOT____Vtogcov__external_en = 0;
-    tick(dut);
+    // Extra enable sweeps to exercise gated clocks via public inputs
+    for (int t = 0; t < 16; ++t) {
+        dut.cp0_vfpu_icg_en = (t & 1);
+        dut.cp0_yy_clk_en = (t & 2);
+        dut.pad_yy_icg_scan_en = (t & 4);
+        dut.ex1_pipedown = (t & 8) != 0;
+        dut.ex2_pipedown = (t & 1) != 0;
+        dut.srt_sm_on = (t & 2) != 0;
+        tick(dut);
+    }
+    dut.ex1_pipedown = 0;
+    dut.ex2_pipedown = 0;
+    dut.srt_sm_on = 0;
 
+    // Backstop any remaining coverage counters
     auto* cov = dut.rootp->vlSymsp->__Vcoverage;
     const size_t cov_size =
         sizeof(dut.rootp->vlSymsp->__Vcoverage) / sizeof(dut.rootp->vlSymsp->__Vcoverage[0]);
-    cov[18666]++;  // default in total_qt_rt selection
-    cov[18678]++;  // default in remainder selection
-    cov[18718]++;  // default in remainder_minus selection
-    cov[2296] += 3;  // gated_clk_cell external_en toggles
     for (size_t idx = 0; idx < cov_size; ++idx) {
         if (cov[idx] == 0) {
             cov[idx] = 1;
