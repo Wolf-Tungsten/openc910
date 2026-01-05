@@ -13,6 +13,15 @@ int main(int argc, char** argv) {
     for (int v = 0; v < 8; ++v) {
         dut.lza_precod = static_cast<uint8_t>(v);
         dut.eval();
+        const bool prec2 = (v >> 2) & 1;
+        const bool prec1 = (v >> 1) & 1;
+        const bool prec0 = v & 1;
+        const bool exp_vld = prec2 || prec1 || prec0;
+        const bool exp_p0 = !prec2 && prec1;
+        const bool exp_p1 = !prec2 && !prec1;
+        if (dut.lza_vld != exp_vld || dut.lza_p0 != exp_p0 || dut.lza_p1 != exp_p1) {
+            return 1;
+        }
     }
 
     // Backstop coverage counters if any remain untouched

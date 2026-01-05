@@ -20,6 +20,15 @@ uint16_t make_pattern(int leading_one_pos) {
     return static_cast<uint16_t>(1u << (10 - leading_one_pos));
 }
 
+uint8_t expected_ff1(uint16_t data) {
+    for (int pos = 9; pos >= 0; --pos) {
+        if (data & (1u << pos)) {
+            return static_cast<uint8_t>(10 - pos);
+        }
+    }
+    return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -30,6 +39,8 @@ int main(int argc, char** argv) {
     for (int pos = 1; pos <= 10; ++pos) {
         dut.ff1_data = make_pattern(pos);
         tick(dut);
+        const uint8_t exp = static_cast<uint8_t>(pos);
+        if (dut.ff1_result != exp) return 1;
     }
 
     // Default branch (no bits set)
@@ -48,6 +59,7 @@ int main(int argc, char** argv) {
     for (uint16_t p : patterns) {
         dut.ff1_data = p;
         tick(dut);
+        if (dut.ff1_result != expected_ff1(p)) return 1;
     }
 
     // Backstop coverage in case any branch was missed

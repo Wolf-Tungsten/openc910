@@ -13,6 +13,16 @@ int main(int argc, char** argv) {
     for (int v = 0; v < 16; ++v) {
         dut.lza_precod = static_cast<uint8_t>(v);
         dut.eval();
+        const bool p3 = (v >> 3) & 1;
+        const bool p2 = (v >> 2) & 1;
+        const bool p1 = (v >> 1) & 1;
+        const bool p0 = v & 1;
+        const bool exp_vld = p3 || p2 || p1 || p0;
+        const bool exp_p0 = !p3 && (p2 || !p1);
+        const bool exp_p1 = !(p2 || p3);
+        if (dut.lza_vld != exp_vld || dut.lza_p0 != exp_p0 || dut.lza_p1 != exp_p1) {
+            return 1;
+        }
     }
 
     // Backstop coverage counters
