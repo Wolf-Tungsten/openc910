@@ -41,7 +41,11 @@ module f_spsram_large(
   CLK,
   D,
   Q,
-  WEN
+  WEN,
+  tb_init_en,
+  tb_init_addr,
+  tb_init_wdata,
+  tb_init_wen
 );
 
 parameter ADDR_WIDTH = 21;	// 2MB per ram, 16MB at all for f_spsram_large
@@ -52,6 +56,10 @@ input           CEN;
 input           CLK;         
 input   [127:0] D;           
 input   [15:0]  WEN;         
+input           tb_init_en;  
+input   [ADDR_WIDTH-1:0]  tb_init_addr; 
+input   [127:0] tb_init_wdata; 
+input   [15:0]  tb_init_wen; 
 output  [127:0] Q;           
 
 reg     [ADDR_WIDTH-1:0]  addr_holding; 
@@ -63,7 +71,16 @@ wire            CLK;
 wire    [127:0] D;           
 wire    [127:0] Q;           
 wire    [15:0]  WEN;         
+wire            tb_init_en;  
+wire    [ADDR_WIDTH-1:0]  tb_init_addr; 
+wire    [127:0] tb_init_wdata; 
+wire    [15:0]  tb_init_wen; 
 wire    [ADDR_WIDTH-1:0]  addr;        
+wire            init_active; 
+wire    [ADDR_WIDTH-1:0]  mem_addr;   
+wire            mem_cen;    
+wire    [127:0] mem_d;      
+wire    [15:0]  mem_wen;    
 wire    [7 :0]  ram0_din;    
 wire    [7 :0]  ram0_dout;   
 wire            ram0_wen;    
@@ -119,55 +136,61 @@ wire            ram15_wen;
 
 
 
-assign ram0_wen = !CEN && !WEN[0];
-assign ram1_wen = !CEN && !WEN[1];
-assign ram2_wen = !CEN && !WEN[2];
-assign ram3_wen = !CEN && !WEN[3];
-assign ram4_wen = !CEN && !WEN[4];
-assign ram5_wen = !CEN && !WEN[5];
-assign ram6_wen = !CEN && !WEN[6];
-assign ram7_wen = !CEN && !WEN[7];
-assign ram8_wen = !CEN && !WEN[8];
-assign ram9_wen = !CEN && !WEN[9];
-assign ram10_wen = !CEN && !WEN[10];
-assign ram11_wen = !CEN && !WEN[11];
-assign ram12_wen = !CEN && !WEN[12];
-assign ram13_wen = !CEN && !WEN[13];
-assign ram14_wen = !CEN && !WEN[14];
-assign ram15_wen = !CEN && !WEN[15];
+assign init_active = tb_init_en;
+assign mem_addr = init_active ? tb_init_addr : A[ADDR_WIDTH-1:0];
+assign mem_cen = init_active ? 1'b0 : CEN;
+assign mem_d = init_active ? tb_init_wdata : D[127:0];
+assign mem_wen = init_active ? tb_init_wen : WEN[15:0];
+
+assign ram0_wen = !mem_cen && !mem_wen[0];
+assign ram1_wen = !mem_cen && !mem_wen[1];
+assign ram2_wen = !mem_cen && !mem_wen[2];
+assign ram3_wen = !mem_cen && !mem_wen[3];
+assign ram4_wen = !mem_cen && !mem_wen[4];
+assign ram5_wen = !mem_cen && !mem_wen[5];
+assign ram6_wen = !mem_cen && !mem_wen[6];
+assign ram7_wen = !mem_cen && !mem_wen[7];
+assign ram8_wen = !mem_cen && !mem_wen[8];
+assign ram9_wen = !mem_cen && !mem_wen[9];
+assign ram10_wen = !mem_cen && !mem_wen[10];
+assign ram11_wen = !mem_cen && !mem_wen[11];
+assign ram12_wen = !mem_cen && !mem_wen[12];
+assign ram13_wen = !mem_cen && !mem_wen[13];
+assign ram14_wen = !mem_cen && !mem_wen[14];
+assign ram15_wen = !mem_cen && !mem_wen[15];
 
 
 
 
 
 
-assign ram0_din[WRAP_WIDTH-1:0] = D[WRAP_WIDTH-1:0];
-assign ram1_din[WRAP_WIDTH-1:0] = D[2*WRAP_WIDTH-1:WRAP_WIDTH];
-assign ram2_din[WRAP_WIDTH-1:0] = D[3*WRAP_WIDTH-1:2*WRAP_WIDTH];
-assign ram3_din[WRAP_WIDTH-1:0] = D[4*WRAP_WIDTH-1:3*WRAP_WIDTH];
-assign ram4_din[WRAP_WIDTH-1:0] = D[5*WRAP_WIDTH-1:4*WRAP_WIDTH];
-assign ram5_din[WRAP_WIDTH-1:0] = D[6*WRAP_WIDTH-1:5*WRAP_WIDTH];
-assign ram6_din[WRAP_WIDTH-1:0] = D[7*WRAP_WIDTH-1:6*WRAP_WIDTH];
-assign ram7_din[WRAP_WIDTH-1:0] = D[8*WRAP_WIDTH-1:7*WRAP_WIDTH];
-assign ram8_din[WRAP_WIDTH-1:0] = D[9*WRAP_WIDTH-1:8*WRAP_WIDTH];
-assign ram9_din[WRAP_WIDTH-1:0] = D[10*WRAP_WIDTH-1:9*WRAP_WIDTH];
-assign ram10_din[WRAP_WIDTH-1:0] = D[11*WRAP_WIDTH-1:10*WRAP_WIDTH];
-assign ram11_din[WRAP_WIDTH-1:0] = D[12*WRAP_WIDTH-1:11*WRAP_WIDTH];
-assign ram12_din[WRAP_WIDTH-1:0] = D[13*WRAP_WIDTH-1:12*WRAP_WIDTH];
-assign ram13_din[WRAP_WIDTH-1:0] = D[14*WRAP_WIDTH-1:13*WRAP_WIDTH];
-assign ram14_din[WRAP_WIDTH-1:0] = D[15*WRAP_WIDTH-1:14*WRAP_WIDTH];
-assign ram15_din[WRAP_WIDTH-1:0] = D[16*WRAP_WIDTH-1:15*WRAP_WIDTH];
+assign ram0_din[WRAP_WIDTH-1:0] = mem_d[WRAP_WIDTH-1:0];
+assign ram1_din[WRAP_WIDTH-1:0] = mem_d[2*WRAP_WIDTH-1:WRAP_WIDTH];
+assign ram2_din[WRAP_WIDTH-1:0] = mem_d[3*WRAP_WIDTH-1:2*WRAP_WIDTH];
+assign ram3_din[WRAP_WIDTH-1:0] = mem_d[4*WRAP_WIDTH-1:3*WRAP_WIDTH];
+assign ram4_din[WRAP_WIDTH-1:0] = mem_d[5*WRAP_WIDTH-1:4*WRAP_WIDTH];
+assign ram5_din[WRAP_WIDTH-1:0] = mem_d[6*WRAP_WIDTH-1:5*WRAP_WIDTH];
+assign ram6_din[WRAP_WIDTH-1:0] = mem_d[7*WRAP_WIDTH-1:6*WRAP_WIDTH];
+assign ram7_din[WRAP_WIDTH-1:0] = mem_d[8*WRAP_WIDTH-1:7*WRAP_WIDTH];
+assign ram8_din[WRAP_WIDTH-1:0] = mem_d[9*WRAP_WIDTH-1:8*WRAP_WIDTH];
+assign ram9_din[WRAP_WIDTH-1:0] = mem_d[10*WRAP_WIDTH-1:9*WRAP_WIDTH];
+assign ram10_din[WRAP_WIDTH-1:0] = mem_d[11*WRAP_WIDTH-1:10*WRAP_WIDTH];
+assign ram11_din[WRAP_WIDTH-1:0] = mem_d[12*WRAP_WIDTH-1:11*WRAP_WIDTH];
+assign ram12_din[WRAP_WIDTH-1:0] = mem_d[13*WRAP_WIDTH-1:12*WRAP_WIDTH];
+assign ram13_din[WRAP_WIDTH-1:0] = mem_d[14*WRAP_WIDTH-1:13*WRAP_WIDTH];
+assign ram14_din[WRAP_WIDTH-1:0] = mem_d[15*WRAP_WIDTH-1:14*WRAP_WIDTH];
+assign ram15_din[WRAP_WIDTH-1:0] = mem_d[16*WRAP_WIDTH-1:15*WRAP_WIDTH];
 
 
 always@(posedge CLK)
 begin
-  if(!CEN) begin
-    addr_holding[ADDR_WIDTH-1:0] <= A[ADDR_WIDTH-1:0];
+  if(!mem_cen) begin
+    addr_holding[ADDR_WIDTH-1:0] <= mem_addr[ADDR_WIDTH-1:0];
   end
 end
 
-assign addr[ADDR_WIDTH-1:0] = CEN ? addr_holding[ADDR_WIDTH-1:0]
-                                  : A[ADDR_WIDTH-1:0];
+assign addr[ADDR_WIDTH-1:0] = mem_cen ? addr_holding[ADDR_WIDTH-1:0]
+                                  : mem_addr[ADDR_WIDTH-1:0];
 
 
 
@@ -306,5 +329,4 @@ ram #(WRAP_WIDTH,ADDR_WIDTH) ram15(
 
 
 endmodule
-
 

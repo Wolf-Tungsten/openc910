@@ -13,6 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+`ifndef APB_BASE_ADDR
+`define APB_BASE_ADDR 40'hb0000000
+`endif
+
 module cpu_sub_system_axi
 ///////////////////////////////////////////////////
 // Ports Declarations
@@ -397,4 +401,3 @@ wid_for_axi4 wid_for_axi4 (
 );
 
 endmodule
-

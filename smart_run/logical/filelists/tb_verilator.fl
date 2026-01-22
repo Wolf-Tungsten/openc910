@@ -17,6 +17,5 @@ limitations under the License.
 +incdir+../logical/tb+
 
 -y ../logical/tb
-../logical/tb/tb_verilator.v
-../logical/tb/sim_main1.cpp
-
+../logical/tb/sim_top.v
+../logical/tb/tb_c910.cpp

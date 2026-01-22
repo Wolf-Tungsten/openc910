@@ -49,7 +49,11 @@ module axi_slave128(
   wlast_s0,
   wready_s0,
   wstrb_s0,
-  wvalid_s0
+  wvalid_s0,
+  tb_init_en,
+  tb_init_addr,
+  tb_init_wdata,
+  tb_init_wen
 );
 
 
@@ -78,6 +82,10 @@ input   [7  :0]  wid_s0;
 input            wlast_s0;       
 input   [15 :0]  wstrb_s0;       
 input            wvalid_s0;      
+input            tb_init_en;     
+input   [20 :0]  tb_init_addr;   
+input   [127:0]  tb_init_wdata;  
+input   [15 :0]  tb_init_wen;    
 output           arready_s0;     
 output           awready_s0;     
 output  [7  :0]  bid_s0;         
@@ -499,10 +507,13 @@ f_spsram_large x_f_spsram_large (
   .CLK               (pll_core_cpuclk  ),
   .D                 (mem_din[127:0]   ),
   .Q                 (mem_dout[127:0]  ),
-  .WEN               (mem_wen[15:0]    )
+  .WEN               (mem_wen[15:0]    ),
+  .tb_init_en        (tb_init_en       ),
+  .tb_init_addr      (tb_init_addr     ),
+  .tb_init_wdata     (tb_init_wdata    ),
+  .tb_init_wen       (tb_init_wen      )
 );
 
 endmodule
-
 
 

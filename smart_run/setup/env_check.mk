@@ -18,8 +18,8 @@ ifndef TOOL_EXTENSION
 	$(warning \
         $(newline)   The environment varialble $$TOOL_EXTENSION must be set to specify the GNU \
         $(newline)   toolchains to compile .c/.s smart test cases. \
-        $(newline)   $$TOOL_EXTENSION must be set as shown in ./setup/example_setup.csh, and the \
-        $(newline)   suggested steps are:  \
+        $(newline)   $$TOOL_EXTENSION must be set (recommend: source ./env.sh). \
+        $(newline)   You can also edit ./setup/example_setup.csh, and the suggested steps are:  \
         $(newline)       1. vim ./setup/example_setup.csh \
         $(newline)       2. Modify the example_setup.csh with the real toolchain path according \
         $(newline)          to your environment. \
@@ -27,4 +27,3 @@ ifndef TOOL_EXTENSION
 else
 	@echo "  Toolchain path: ${TOOL_EXTENSION}"
 endif
-

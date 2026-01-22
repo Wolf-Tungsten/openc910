@@ -106,7 +106,7 @@ else
         else
             ifeq ($(SIM), verilator)
               SIMULATOR_OPT := -O3 -x-assign 0 -Wno-fatal --threads ${THREADS} --no-timing
-              SIMULATOR_DEF := -cc --exe --top-module top 
+              SIMULATOR_DEF := -cc --exe --top-module sim_top 
               SIMULATOR_LOG := 
             else
             endif
@@ -147,6 +147,7 @@ else
 endif 
 
 buildVerilator:
+	@mkdir -p $(CCACHE_DIR)
 	@cp ./logical/tb/Makefile_obj ./work/Makefile_obj
 	@cd ./work && make -j -C obj_dir -f ../Makefile_obj
 cleansim:
@@ -188,7 +189,7 @@ cleancase:
 ################################################################################
 # Execute one case
 runVerilator:
-	@cd ./work && obj_dir/Vtop
+	@cd ./work && obj_dir/Vsim_top
 
 runcase:
 	@make cleanVerilator
@@ -209,7 +210,7 @@ else
         else
             ifeq ($(SIM), verilator)
 		make buildVerilator
-		cd ./work && obj_dir/Vtop	
+		cd ./work && obj_dir/Vsim_top	
             else
 	        cd ./work && vvp xuantie_core.vvp 
             endif
@@ -274,5 +275,7 @@ help:
 	@echo "    make buildVerilator             			: run build executable file with Verilator;
 	@echo "    make runVerilator	           			: run simulation file with Verilator;
 	
-
+# Keep ccache under the project workspace to avoid permission issues.
+CCACHE_DIR ?= $(CURDIR)/work/.ccache
+export CCACHE_DIR
 

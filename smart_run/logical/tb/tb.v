@@ -67,6 +67,11 @@ module tb();
   
   wire uart0_sin;
   wire [7:0]b_pad_gpio_porta;
+  wire axim_clk_en;
+  wire tb_init_en;
+  wire [20:0] tb_init_addr;
+  wire [127:0] tb_init_wdata;
+  wire [15:0] tb_init_wen;
   
   assign pad_yy_gate_clk_en_b = 1'b1;
   
@@ -333,6 +338,10 @@ module tb();
   
   assign jtg_tdi = 1'b0;
   assign uart0_sin = 1'b1;
+  assign tb_init_en = 1'b0;
+  assign tb_init_addr = 21'b0;
+  assign tb_init_wdata = 128'b0;
+  assign tb_init_wen = 16'hffff;
   
   
   soc x_soc(
@@ -343,6 +352,11 @@ module tb();
     .i_pad_jtg_tdi       ( jtg_tdi              ),
     .i_pad_jtg_tms       ( jtg_tms              ),
     .i_pad_uart0_sin     ( uart0_sin            ),
+    .axim_clk_en         ( axim_clk_en          ),
+    .tb_init_en          ( tb_init_en           ),
+    .tb_init_addr        ( tb_init_addr         ),
+    .tb_init_wdata       ( tb_init_wdata        ),
+    .tb_init_wen         ( tb_init_wen          ),
     .o_pad_jtg_tdo       ( jtg_tdo              ),
     .o_pad_uart0_sout    ( uart0_sout           ),
     .i_pad_rst_b         ( rst_b                )

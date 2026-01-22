@@ -23,6 +23,11 @@ module soc(
   i_pad_jtg_trst_b,
   i_pad_rst_b,
   i_pad_uart0_sin,
+  axim_clk_en,
+  tb_init_en,
+  tb_init_addr,
+  tb_init_wdata,
+  tb_init_wen,
   o_pad_jtg_tdo,
   o_pad_uart0_sout
 );
@@ -34,6 +39,11 @@ input            i_pad_jtg_tms;
 input            i_pad_jtg_trst_b;     
 input            i_pad_rst_b;          
 input            i_pad_uart0_sin;      
+output           axim_clk_en;          
+input            tb_init_en;           
+input   [20 :0]  tb_init_addr;         
+input   [127:0]  tb_init_wdata;        
+input   [15 :0]  tb_init_wen;          
 output           o_pad_jtg_tdo;        
 output           o_pad_uart0_sout;     
 inout   [7  :0]  b_pad_gpio_porta;     
@@ -121,7 +131,6 @@ wire             bvalid_s0;
 wire             bvalid_s1;            
 wire             bvalid_s2;            
 wire             bvalid_s3;            
-wire             axim_clk_en;               
 wire             fifo_biu_arready;     
 wire    [39 :0]  fifo_pad_araddr;      
 wire    [1  :0]  fifo_pad_arburst;     
@@ -471,6 +480,10 @@ axi_slave128  x_axi_slave128 (
   .rready_s0        (rready_s0       ),
   .rresp_s0         (rresp_s0        ),
   .rvalid_s0        (rvalid_s0       ),
+  .tb_init_addr     (tb_init_addr    ),
+  .tb_init_en       (tb_init_en      ),
+  .tb_init_wdata    (tb_init_wdata   ),
+  .tb_init_wen      (tb_init_wen     ),
   .wdata_s0         (biu_pad_wdata   ),
   .wid_s0           (biu_pad_wid     ),
   .wlast_s0         (biu_pad_wlast   ),
@@ -742,5 +755,3 @@ err_gen  x_err_gen (
 );
 
 endmodule
-
-
