@@ -15,6 +15,8 @@
 
 include ./setup/smart_cfg.mk
 include ./setup/env_check.mk
+SIM_CASE_FILES := $(SIM_FILELIST)
+SIM_FILELIST :=
 
 ################################################################################
 # Simulation related
@@ -22,6 +24,12 @@ include ./setup/env_check.mk
 SIM = iverilog
 DUMP = off
 THREADS = 4
+WOLF_SV_PARSER ?= $(abspath $(CURDIR)/../../../../build/bin/wolf-sv-parser)
+WOLF_TOP ?= sim_top
+WOLF_EMIT_DIR ?= $(CURDIR)/work/wolf_emit
+WOLF_EMITTED_SV ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.sv
+WOLF_FILELIST ?= -f ../logical/filelists/sim_wolf.fl
+WOLF_EMIT_FLAGS ?= --emit-sv --top $(WOLF_TOP)
 
 # Generate C++ in executable form
 VERILATOR_FLAGS += -cc --exe --no-timing
@@ -115,12 +123,12 @@ else
 endif
 
 ifeq ($(SIM), iverilog)
-    SIM_FILELIST := $(SIM_FILELIST) -f ${CODE_BASE_PATH}/gen_rtl/filelists/C910_asic_rtl.fl -c ../logical/filelists/smart.fl -c ../logical/filelists/tb.fl
+    SIM_FILELIST := $(SIM_CASE_FILES) -f ${CODE_BASE_PATH}/gen_rtl/filelists/C910_asic_rtl.fl -c ../logical/filelists/smart.fl -c ../logical/filelists/tb.fl
 else
     ifeq ($(SIM), verilator)
-    SIM_FILELIST := $(SIM_FILELIST) -f ../logical/filelists/sim_verilator.fl
+    SIM_FILELIST := $(WOLF_EMITTED_SV) ../logical/tb/tb_c910.cpp
     else
-    SIM_FILELIST := $(SIM_FILELIST) -f ../logical/filelists/sim.fl
+    SIM_FILELIST := $(SIM_CASE_FILES) -f ../logical/filelists/sim.fl
     endif
 endif
 
@@ -137,7 +145,8 @@ else
         ifeq ($(SIM), iverilog)
 	  @cd ./work && iverilog $(TIMESCALE) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIM_FILELIST) $(SIM_DUMP) $(SIMULATOR_LOG)
         else
-            ifeq ($(SIM), verilator)
+        ifeq ($(SIM), verilator)
+	      @make -s wolf_emit
 	      @cd ./work && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(SIM_FILELIST) $(SIM_DUMP)
             else
 	      @echo "  [THead-smart] Please specify SIM = vcs to use VCS, or SIM = nc ,or SIM = verilator to use irun ..."
@@ -145,6 +154,15 @@ else
         endif
     endif 
 endif 
+
+wolf_emit:
+	@if [ ! -x "$(WOLF_SV_PARSER)" ]; then \
+		echo "  [THead-smart] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
+		echo "  [THead-smart] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
+		exit 1; \
+	fi
+	@mkdir -p $(WOLF_EMIT_DIR)
+	@cd ./work && $(WOLF_SV_PARSER) $(WOLF_EMIT_FLAGS) -o $(WOLF_EMITTED_SV) $(WOLF_FILELIST)
 
 buildVerilator:
 	@mkdir -p $(CCACHE_DIR)
@@ -278,4 +296,3 @@ help:
 # Keep ccache under the project workspace to avoid permission issues.
 CCACHE_DIR ?= $(CURDIR)/work/.ccache
 export CCACHE_DIR
-
