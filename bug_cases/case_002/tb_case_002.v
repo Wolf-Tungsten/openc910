@@ -1,27 +1,27 @@
-module tb_case_002;
-  reg         l2c_data_clk_x = 1'b0;
-  reg [511:0] l2c_data_din = 0;
-  reg [12:0]  l2c_data_index0 = 0;
-  reg [12:0]  l2c_data_index1 = 0;
-  reg [12:0]  l2c_data_index2 = 0;
-  reg [12:0]  l2c_data_index3 = 0;
-  reg [3:0]   l2c_data_ram_cen = 0;
-  reg [3:0]   l2c_data_wen = 0;
-  reg [143:0] l2c_dirty_din = 0;
-  reg         l2c_dirty_gwen = 1'b0;
-  reg         l2c_dirty_ram_cen = 1'b0;
-  reg [143:0] l2c_dirty_wen = 0;
-  reg         l2c_tag_clk_x = 1'b0;
-  reg [383:0] l2c_tag_din = 0;
-  reg         l2c_tag_gwen = 1'b0;
-  reg [8:0]   l2c_tag_index = 0;
-  reg         l2c_tag_ram_cen = 1'b0;
-  reg [383:0] l2c_tag_wen = 0;
-  reg         pad_yy_icg_scan_en = 1'b0;
-
-  wire [511:0] l2c_data_dout;
-  wire [143:0] l2c_dirty_dout;
-  wire [383:0] l2c_tag_dout;
+module tb_case_002(
+  input         l2c_data_clk_x,
+  input [511:0] l2c_data_din,
+  output [511:0] l2c_data_dout,
+  input [12:0]  l2c_data_index0,
+  input [12:0]  l2c_data_index1,
+  input [12:0]  l2c_data_index2,
+  input [12:0]  l2c_data_index3,
+  input [3:0]   l2c_data_ram_cen,
+  input [3:0]   l2c_data_wen,
+  input [143:0] l2c_dirty_din,
+  output [143:0] l2c_dirty_dout,
+  input         l2c_dirty_gwen,
+  input         l2c_dirty_ram_cen,
+  input [143:0] l2c_dirty_wen,
+  input         l2c_tag_clk_x,
+  input [383:0] l2c_tag_din,
+  output [383:0] l2c_tag_dout,
+  input         l2c_tag_gwen,
+  input [8:0]   l2c_tag_index,
+  input         l2c_tag_ram_cen,
+  input [383:0] l2c_tag_wen,
+  input         pad_yy_icg_scan_en
+);
 
   ct_l2cache_top dut (
     .l2c_data_clk_x(l2c_data_clk_x),

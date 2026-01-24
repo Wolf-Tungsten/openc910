@@ -19,7 +19,7 @@ The `case_001` reproduction command triggers the same failure.
 
 ## Inputs (minimized)
 - Filelist: `tests/data/openc910/bug_cases/case_001/filelist.f`
-  - `ct_ifu_icache_if.v` (extracted from `C910_RTL_FACTORY`)
+  - `tests/data/openc910/C910_RTL_FACTORY/gen_rtl/ifu/rtl/ct_ifu_icache_if.v`
   - `stub_modules.v` (blackbox stubs for submodules)
   - `tb_case_001.v`
 

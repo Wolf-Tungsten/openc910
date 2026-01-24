@@ -17,7 +17,7 @@ Aborted (core dumped)
 
 ## Inputs (minimized)
 - Filelist: `tests/data/openc910/bug_cases/case_002/filelist.f`
-  - `ct_l2cache_top.v` (extracted from `C910_RTL_FACTORY`)
+  - `tests/data/openc910/C910_RTL_FACTORY/gen_rtl/l2c/rtl/ct_l2cache_top.v`
   - `stub_modules.v` (empty-body stubs to force blackbox instances)
   - `tb_case_002.v`
 
@@ -30,3 +30,11 @@ Aborted (core dumped)
 1. Confirm the slice op creation path for part-selects of blackbox outputs and ensure it does not claim the original
    value as a new defining op.
 2. Add a guard or create a new value for slice results instead of reusing the blackbox result value.
+
+## Fix applied
+- Updated blackbox output handling in `src/elaborate.cpp` to mirror instance output logic: if the connected
+  expression resolves to a value that already has a defining op (e.g., a slice), the blackbox now creates a
+  fresh port value and records a write-back to the target slice; only definition-free values are wired
+  directly as blackbox results.
+- This prevents duplicate defining operations when blackbox outputs connect to part-selects such as
+  `l2c_data_dout[127:0]` in `ct_l2cache_top.v`.

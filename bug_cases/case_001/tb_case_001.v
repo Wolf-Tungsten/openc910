@@ -1,60 +1,61 @@
-module tb_case_001;
-  reg cp0_ifu_icache_en = 1'b0;
-  reg cp0_ifu_icg_en = 1'b0;
-  reg cp0_yy_clk_en = 1'b0;
-  reg cpurst_b = 1'b0;
-  reg forever_cpuclk = 1'b0;
-  reg hpcp_ifu_cnt_en = 1'b0;
-  reg [38 :0] ifctrl_icache_if_index = 0;
-  reg ifctrl_icache_if_inv_fifo = 1'b0;
-  reg ifctrl_icache_if_inv_on = 1'b0;
-  reg ifctrl_icache_if_read_req_data0 = 1'b0;
-  reg ifctrl_icache_if_read_req_data1 = 1'b0;
-  reg [38 :0] ifctrl_icache_if_read_req_index = 0;
-  reg ifctrl_icache_if_read_req_tag = 1'b0;
-  reg ifctrl_icache_if_reset_req = 1'b0;
-  reg ifctrl_icache_if_tag_req = 1'b0;
-  reg [2  :0] ifctrl_icache_if_tag_wen = 0;
-  reg ifu_hpcp_icache_miss_pre = 1'b0;
-  reg [33 :0] ipb_icache_if_index = 0;
-  reg ipb_icache_if_req = 1'b0;
-  reg ipb_icache_if_req_for_gateclk = 1'b0;
-  reg l1_refill_icache_if_fifo = 1'b0;
-  reg l1_refill_icache_if_first = 1'b0;
-  reg [38 :0] l1_refill_icache_if_index = 0;
-  reg [127:0] l1_refill_icache_if_inst_data = 0;
-  reg l1_refill_icache_if_last = 1'b0;
-  reg [31 :0] l1_refill_icache_if_pre_code = 0;
-  reg [27 :0] l1_refill_icache_if_ptag = 0;
-  reg l1_refill_icache_if_wr = 1'b0;
-  reg pad_yy_icg_scan_en = 1'b0;
-  reg pcgen_icache_if_chgflw = 1'b0;
-  reg pcgen_icache_if_chgflw_bank0 = 1'b0;
-  reg pcgen_icache_if_chgflw_bank1 = 1'b0;
-  reg pcgen_icache_if_chgflw_bank2 = 1'b0;
-  reg pcgen_icache_if_chgflw_bank3 = 1'b0;
-  reg pcgen_icache_if_chgflw_short = 1'b0;
-  reg pcgen_icache_if_gateclk_en = 1'b0;
-  reg [15 :0] pcgen_icache_if_index = 0;
-  reg pcgen_icache_if_seq_data_req = 1'b0;
-  reg pcgen_icache_if_seq_data_req_short = 1'b0;
-  reg pcgen_icache_if_seq_tag_req = 1'b0;
-  reg [1  :0] pcgen_icache_if_way_pred = 0;
-  wire [127:0] icache_if_ifctrl_inst_data0;
-  wire [127:0] icache_if_ifctrl_inst_data1;
-  wire [28 :0] icache_if_ifctrl_tag_data0;
-  wire [28 :0] icache_if_ifctrl_tag_data1;
-  wire icache_if_ifdp_fifo;
-  wire [127:0] icache_if_ifdp_inst_data0;
-  wire [127:0] icache_if_ifdp_inst_data1;
-  wire [31 :0] icache_if_ifdp_precode0;
-  wire [31 :0] icache_if_ifdp_precode1;
-  wire [28 :0] icache_if_ifdp_tag_data0;
-  wire [28 :0] icache_if_ifdp_tag_data1;
-  wire [28 :0] icache_if_ipb_tag_data0;
-  wire [28 :0] icache_if_ipb_tag_data1;
-  wire ifu_hpcp_icache_access;
-  wire ifu_hpcp_icache_miss;
+module tb_case_001(
+  input            cp0_ifu_icache_en,
+  input            cp0_ifu_icg_en,
+  input            cp0_yy_clk_en,
+  input            cpurst_b,
+  input            forever_cpuclk,
+  input            hpcp_ifu_cnt_en,
+  input   [38 :0]  ifctrl_icache_if_index,
+  input            ifctrl_icache_if_inv_fifo,
+  input            ifctrl_icache_if_inv_on,
+  input            ifctrl_icache_if_read_req_data0,
+  input            ifctrl_icache_if_read_req_data1,
+  input   [38 :0]  ifctrl_icache_if_read_req_index,
+  input            ifctrl_icache_if_read_req_tag,
+  input            ifctrl_icache_if_reset_req,
+  input            ifctrl_icache_if_tag_req,
+  input   [2  :0]  ifctrl_icache_if_tag_wen,
+  input            ifu_hpcp_icache_miss_pre,
+  input   [33 :0]  ipb_icache_if_index,
+  input            ipb_icache_if_req,
+  input            ipb_icache_if_req_for_gateclk,
+  input            l1_refill_icache_if_fifo,
+  input            l1_refill_icache_if_first,
+  input   [38 :0]  l1_refill_icache_if_index,
+  input   [127:0]  l1_refill_icache_if_inst_data,
+  input            l1_refill_icache_if_last,
+  input   [31 :0]  l1_refill_icache_if_pre_code,
+  input   [27 :0]  l1_refill_icache_if_ptag,
+  input            l1_refill_icache_if_wr,
+  input            pad_yy_icg_scan_en,
+  input            pcgen_icache_if_chgflw,
+  input            pcgen_icache_if_chgflw_bank0,
+  input            pcgen_icache_if_chgflw_bank1,
+  input            pcgen_icache_if_chgflw_bank2,
+  input            pcgen_icache_if_chgflw_bank3,
+  input            pcgen_icache_if_chgflw_short,
+  input            pcgen_icache_if_gateclk_en,
+  input   [15 :0]  pcgen_icache_if_index,
+  input            pcgen_icache_if_seq_data_req,
+  input            pcgen_icache_if_seq_data_req_short,
+  input            pcgen_icache_if_seq_tag_req,
+  input   [1  :0]  pcgen_icache_if_way_pred,
+  output  [127:0]  icache_if_ifctrl_inst_data0,
+  output  [127:0]  icache_if_ifctrl_inst_data1,
+  output  [28 :0]  icache_if_ifctrl_tag_data0,
+  output  [28 :0]  icache_if_ifctrl_tag_data1,
+  output           icache_if_ifdp_fifo,
+  output  [127:0]  icache_if_ifdp_inst_data0,
+  output  [127:0]  icache_if_ifdp_inst_data1,
+  output  [31 :0]  icache_if_ifdp_precode0,
+  output  [31 :0]  icache_if_ifdp_precode1,
+  output  [28 :0]  icache_if_ifdp_tag_data0,
+  output  [28 :0]  icache_if_ifdp_tag_data1,
+  output  [28 :0]  icache_if_ipb_tag_data0,
+  output  [28 :0]  icache_if_ipb_tag_data1,
+  output           ifu_hpcp_icache_access,
+  output           ifu_hpcp_icache_miss
+);
 
   ct_ifu_icache_if dut (
     .cp0_ifu_icache_en(cp0_ifu_icache_en),

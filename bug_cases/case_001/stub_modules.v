@@ -162,4 +162,5 @@ module gated_clk_cell(
   input external_en;
   input pad_yy_icg_scan_en;
   output clk_out;
+  assign clk_out = clk_in & global_en & module_en & local_en;
 endmodule

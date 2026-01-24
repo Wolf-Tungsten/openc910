@@ -1,17 +1,18 @@
 ROOT := $(abspath ../../../../..)
 WOLF_SV_PARSER ?= $(ROOT)/build/bin/wolf-sv-parser
 FILELIST := $(CURDIR)/filelist.f
-TOP := tb_case_002
-OUT_DIR := $(ROOT)/build/c910_bug_case/case_002
+TOP := tb_case_003
+OUT_DIR := $(ROOT)/build/c910_bug_case/case_003
 WOLF_DIR := $(OUT_DIR)/wolf
 OUT := $(WOLF_DIR)/wolf_emit.sv
 
-DUT_TOP := ct_l2cache_top
-TB_SRC := $(CURDIR)/tb_case_002.cpp
+DUT_TOP := ct_ifu_ifctrl
+TB_SRC := $(CURDIR)/tb_case_003.cpp
+DEFINES := -DICACHE_64K
 VERILATOR ?= verilator
 VERILATOR_FLAGS ?= -Wall -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL -Wno-UNDRIVEN \
 	-Wno-SYNCASYNCNET -Wno-UNUSEDPARAM
-SIM_BIN_NAME := sim_case_002
+SIM_BIN_NAME := sim_case_003
 RTL_DIR := $(OUT_DIR)/rtl
 RTL_SIM_BIN := $(RTL_DIR)/$(SIM_BIN_NAME)
 WOLF_SIM_BIN := $(WOLF_DIR)/$(SIM_BIN_NAME)
@@ -23,36 +24,36 @@ WOLF_VERILATOR_MK := $(WOLF_DIR)/$(VERILATOR_PREFIX).mk
 
 run:
 	@if [ ! -x "$(WOLF_SV_PARSER)" ]; then \
-		echo "[case_002] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
-		echo "[case_002] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
+		echo "[case_003] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
+		echo "[case_003] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_DIR)
-	@$(WOLF_SV_PARSER) --emit-sv --top $(TOP) -o $(OUT) -f $(FILELIST)
+	@$(WOLF_SV_PARSER) --emit-sv --top $(TOP) -o $(OUT) -f $(FILELIST) $(DEFINES)
 
 $(RTL_SIM_BIN): $(TB_SRC) $(FILELIST)
 	@if ! command -v $(VERILATOR) >/dev/null 2>&1; then \
-		echo "[case_002] verilator not found in PATH"; \
+		echo "[case_003] verilator not found in PATH"; \
 		exit 1; \
 	fi
 	@mkdir -p $(RTL_DIR)
-	@$(VERILATOR) $(VERILATOR_FLAGS) --cc -f $(FILELIST) --exe $(TB_SRC) \
+	@$(VERILATOR) $(VERILATOR_FLAGS) $(DEFINES) --cc -f $(FILELIST) --exe $(TB_SRC) \
 		--top-module $(DUT_TOP) -Mdir $(RTL_DIR) -o $(SIM_BIN_NAME)
 	CCACHE_DISABLE=1 $(MAKE) -C $(RTL_DIR) -f $(RTL_VERILATOR_MK) $(SIM_BIN_NAME)
 
 $(WOLF_SIM_BIN): $(TB_SRC)
 	@if [ ! -x "$(WOLF_SV_PARSER)" ]; then \
-		echo "[case_002] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
-		echo "[case_002] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
+		echo "[case_003] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
+		echo "[case_003] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
 		exit 1; \
 	fi
 	@if ! command -v $(VERILATOR) >/dev/null 2>&1; then \
-		echo "[case_002] verilator not found in PATH"; \
+		echo "[case_003] verilator not found in PATH"; \
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_DIR)
-	@$(WOLF_SV_PARSER) --emit-sv --top $(DUT_TOP) -o $(OUT) -f $(FILELIST)
-	@$(VERILATOR) $(VERILATOR_FLAGS) --cc $(OUT) --exe $(TB_SRC) \
+	@$(WOLF_SV_PARSER) --emit-sv --top $(DUT_TOP) -o $(OUT) -f $(FILELIST) $(DEFINES)
+	@$(VERILATOR) $(VERILATOR_FLAGS) $(DEFINES) --cc $(OUT) --exe $(TB_SRC) \
 		--top-module $(DUT_TOP) -Mdir $(WOLF_DIR) -o $(SIM_BIN_NAME)
 	CCACHE_DISABLE=1 $(MAKE) -C $(WOLF_DIR) -f $(WOLF_VERILATOR_MK) $(SIM_BIN_NAME)
 

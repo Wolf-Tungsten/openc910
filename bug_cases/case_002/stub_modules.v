@@ -8,6 +8,7 @@ module ct_l2cache_tag_array_16way(
   input [8:0]   tag_idx,
   input [383:0] tag_wen
 );
+  assign tag_dout = tag_din;
 endmodule
 
 module ct_l2cache_dirty_array_16way(
@@ -19,6 +20,7 @@ module ct_l2cache_dirty_array_16way(
   input [8:0]   dirty_idx,
   input [143:0] dirty_wen
 );
+  assign dirty_dout = dirty_din;
 endmodule
 
 module ct_l2cache_data_array(
@@ -31,4 +33,5 @@ module ct_l2cache_data_array(
   input [127:0] data_wen,
   input         pad_yy_icg_scan_en
 );
+  assign data_dout = data_din;
 endmodule
