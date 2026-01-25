@@ -27,3 +27,11 @@ instance).
 ## Initial analysis
 - The sequential always block assigns `{prio, unused}` only on reset, while the non-reset
   branch updates `prio` but never assigns `unused`, triggering the missing-hold warning.
+
+## Fix notes
+- Root cause: the sequential LHS converter did not route concatenation LHS that contains
+  memory elements through the memory write path. As a result, reset writes to `prio[i]`
+  were dropped in the wolf emit flow, causing `sel` to resolve to `2'b11`.
+- Fix: added concat-aware handling in the seq LHS converter to slice RHS and dispatch each
+  operand through memory write handling (or fallback to normal writes). This restores
+  `prio` reset behavior and makes wolf emit match RTL for case_008.

@@ -15,3 +15,4 @@ limitations under the License.
 -f ../logical/filelists/ip.fl
 -f ../logical/filelists/smart.fl
 ../logical/tb/sim_top.v
+../logical/tb/int_mnt.v
