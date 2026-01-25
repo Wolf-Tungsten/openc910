@@ -10,8 +10,8 @@ OUT := $(WOLF_DIR)/wolf_emit.sv
 DUT_TOP := cpu_sub_system_axi
 TB_SRC := $(CURDIR)/tb_case_009.cpp
 VERILATOR ?= verilator
-VERILATOR_FLAGS ?= -Wall -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL -Wno-UNDRIVEN \
-	-Wno-SYNCASYNCNET 
+VERILATOR_FLAGS ?= --no-timing -Wall -Wno-fatal -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL \
+	-Wno-UNDRIVEN -Wno-SYNCASYNCNET -Wno-PINCONNECTEMPTY -Wno-ASSIGNDLY -Wno-MULTIDRIVEN
 SIM_BIN_NAME := sim_case_009
 RTL_SIM_BIN := $(RTL_DIR)/$(SIM_BIN_NAME)
 WOLF_SIM_BIN := $(WOLF_DIR)/$(SIM_BIN_NAME)
@@ -28,7 +28,7 @@ run:
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_DIR)
-	@$(WOLF_SV_PARSER) --emit-sv --top $(TOP) -o $(OUT) -f $(FILELIST)
+	@$(WOLF_SV_PARSER) --emit-sv --emit-json --top $(TOP) -o $(OUT) -f $(FILELIST)
 
 $(RTL_SIM_BIN): $(TB_SRC) $(FILELIST)
 	@if ! command -v $(VERILATOR) >/dev/null 2>&1; then \
@@ -51,7 +51,7 @@ $(WOLF_SIM_BIN): $(TB_SRC)
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_DIR)
-	@$(WOLF_SV_PARSER) --emit-sv --top $(DUT_TOP) -o $(OUT) -f $(FILELIST)
+	@$(WOLF_SV_PARSER) --emit-sv --emit-json --top $(DUT_TOP) -o $(OUT) -f $(FILELIST)
 	@$(VERILATOR) $(VERILATOR_FLAGS) --cc $(OUT) --exe $(TB_SRC) \
 		--top-module $(DUT_TOP) -Mdir $(WOLF_DIR) -o $(SIM_BIN_NAME)
 	CCACHE_DISABLE=1 $(MAKE) -C $(WOLF_DIR) -f $(WOLF_VERILATOR_MK) $(SIM_BIN_NAME)

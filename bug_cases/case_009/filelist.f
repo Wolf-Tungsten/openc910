@@ -1,2 +1,3 @@
-../../C910_RTL_FACTORY/gen_rtl/common/rtl/cpu_sub_system_axi_min.v
+../../smart_run/logical/common/cpu_sub_system_axi.v
+stub_modules.v
 tb_case_009.v
