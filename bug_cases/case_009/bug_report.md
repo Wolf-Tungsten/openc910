@@ -25,3 +25,10 @@
 - `cpu_sub_system_axi.v` declares `pad_plic_int_vld` as `wire [144 - 1 : 0]` and assigns `pad_plic_int_vld[39:0]`.
 - The elaborator reports the target width as 32 (msb 31), suggesting a width-evaluation bug around the
   `144 - 1` range expression or the write-back slice bounds for the net.
+
+## Fix applied
+- Root cause: `pad_plic_int_vld` has overlapping continuous assigns (`[39:0]` plus `[143:32]`), and
+  write-back composition assumed non-overlapping slices, so it errored once it hit the second slice.
+- Fix: in `WriteBackMemo::composeSlices`, continuous-assign slices are merged first; overlaps are
+  trimmed by slicing the existing value and letting narrower slices override broader ones. This
+  yields a non-overlapping slice list and allows write-back to proceed.
