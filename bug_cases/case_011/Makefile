@@ -1,16 +1,16 @@
 ROOT := $(abspath ../../../../..)
 WOLF_SV_PARSER ?= $(ROOT)/build/bin/wolf-sv-parser
 FILELIST := $(CURDIR)/filelist.f
-TOP := tb_case_010
+TOP := tb_case_011
 COVERAGE ?= 0
-OUT_DIR_BASE := $(ROOT)/build/c910_bug_case/case_010
+OUT_DIR_BASE := $(ROOT)/build/c910_bug_case/case_011
 OUT_DIR = $(if $(filter 1,$(COVERAGE)),$(OUT_DIR_BASE)_cov,$(OUT_DIR_BASE))
 WOLF_DIR = $(OUT_DIR)/wolf
 RTL_DIR = $(OUT_DIR)/rtl
 OUT = $(WOLF_DIR)/wolf_emit.sv
 
-DUT_TOP := uart_receive
-TB_SRC := $(CURDIR)/tb_case_010.cpp
+DUT_TOP := gpio
+TB_SRC := $(CURDIR)/tb_case_011.cpp
 VERILATOR ?= verilator
 VERILATOR_COVERAGE ?= verilator_coverage
 COV_MIN ?= 90
@@ -18,7 +18,7 @@ COVERAGE_FLAGS = $(if $(filter 1,$(COVERAGE)),--coverage,)
 VERILATOR_FLAGS ?= --no-timing -Wall -Wno-fatal -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL \
 	-Wno-UNDRIVEN -Wno-SYNCASYNCNET -Wno-PINCONNECTEMPTY -Wno-ASSIGNDLY -Wno-MULTIDRIVEN
 VERILATOR_FLAGS += $(COVERAGE_FLAGS)
-SIM_BIN_NAME := sim_case_010
+SIM_BIN_NAME := sim_case_011
 RTL_SIM_BIN = $(RTL_DIR)/$(SIM_BIN_NAME)
 WOLF_SIM_BIN = $(WOLF_DIR)/$(SIM_BIN_NAME)
 VERILATOR_PREFIX := V$(DUT_TOP)
@@ -35,8 +35,8 @@ COV_CHECK = $(CURDIR)/coverage_check.py
 
 run:
 	@if [ ! -x "$(WOLF_SV_PARSER)" ]; then \
-		echo "[case_010] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
-		echo "[case_010] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
+		echo "[case_011] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
+		echo "[case_011] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_DIR)
@@ -44,7 +44,7 @@ run:
 
 $(RTL_SIM_BIN): $(TB_SRC) $(FILELIST)
 	@if ! command -v $(VERILATOR) >/dev/null 2>&1; then \
-		echo "[case_010] verilator not found in PATH"; \
+		echo "[case_011] verilator not found in PATH"; \
 		exit 1; \
 	fi
 	@mkdir -p $(RTL_DIR)
@@ -54,12 +54,12 @@ $(RTL_SIM_BIN): $(TB_SRC) $(FILELIST)
 
 $(WOLF_SIM_BIN): $(TB_SRC)
 	@if [ ! -x "$(WOLF_SV_PARSER)" ]; then \
-		echo "[case_010] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
-		echo "[case_010] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
+		echo "[case_011] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
+		echo "[case_011] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
 		exit 1; \
 	fi
 	@if ! command -v $(VERILATOR) >/dev/null 2>&1; then \
-		echo "[case_010] verilator not found in PATH"; \
+		echo "[case_011] verilator not found in PATH"; \
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_DIR)
@@ -71,7 +71,7 @@ $(WOLF_SIM_BIN): $(TB_SRC)
 run_verilator: COVERAGE=1
 run_verilator: $(RTL_SIM_BIN)
 	@if ! command -v $(VERILATOR_COVERAGE) >/dev/null 2>&1; then \
-		echo "[case_010] verilator_coverage not found in PATH"; \
+		echo "[case_011] verilator_coverage not found in PATH"; \
 		exit 1; \
 	fi
 	@echo "[RUN] ./$(RTL_SIM_BIN)"
@@ -82,7 +82,7 @@ run_verilator: $(RTL_SIM_BIN)
 run_wolf_sv_parser_verilator: COVERAGE=1
 run_wolf_sv_parser_verilator: $(WOLF_SIM_BIN)
 	@if ! command -v $(VERILATOR_COVERAGE) >/dev/null 2>&1; then \
-		echo "[case_010] verilator_coverage not found in PATH"; \
+		echo "[case_011] verilator_coverage not found in PATH"; \
 		exit 1; \
 	fi
 	@echo "[RUN] ./$(WOLF_SIM_BIN)"
