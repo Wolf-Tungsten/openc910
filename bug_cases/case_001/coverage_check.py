@@ -5,8 +5,8 @@ import sys
 def parse_coverage(info_path):
     lh = 0
     lf = 0
-    da_lh = 0
-    da_lf = 0
+    da_total = 0
+    da_hit = 0
     try:
         with open(info_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -16,19 +16,19 @@ def parse_coverage(info_path):
                 elif line.startswith("LF:"):
                     lf += int(line[3:])
                 elif line.startswith("DA:"):
-                    parts = line[3:].split(",")
-                    if len(parts) >= 2:
-                        da_lf += 1
-                        if int(parts[1]) > 0:
-                            da_lh += 1
+                    da_total += 1
+                    try:
+                        count = int(line.split(",", 1)[1])
+                    except (IndexError, ValueError):
+                        count = 0
+                    if count > 0:
+                        da_hit += 1
     except FileNotFoundError:
         print("[COVERAGE] missing coverage info:", info_path)
         return None
-
-    if lh == 0 and lf == 0 and da_lf > 0:
-        return da_lh, da_lf
-    if lf == 0:
-        return None
+    if lf == 0 and da_total:
+        lf = da_total
+        lh = da_hit
     return lh, lf
 
 
@@ -46,10 +46,13 @@ def main():
 
     result = parse_coverage(info_path)
     if result is None:
-        print("[COVERAGE] no line coverage data found")
         return 1
 
     lh, lf = result
+    if lf == 0:
+        print("[COVERAGE] no line coverage data found")
+        return 1
+
     pct = (lh * 100.0) / lf
     print("[COVERAGE] line coverage %.2f%% (%d/%d)" % (pct, lh, lf))
     if pct < min_pct:

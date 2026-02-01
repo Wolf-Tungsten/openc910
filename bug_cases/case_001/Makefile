@@ -8,7 +8,7 @@ WOLF_DIR := $(OUT_DIR)/wolf
 RTL_DIR := $(OUT_DIR)/rtl
 OUT := $(WOLF_DIR)/wolf_emit.sv
 
-DUT_TOP := ct_piu_top
+ct_piu_top := ct_piu_top
 TB_SRC := $(CURDIR)/tb_case_001.cpp
 VERILATOR ?= verilator
 VERILATOR_COVERAGE ?= verilator_coverage
@@ -20,7 +20,7 @@ VERILATOR_FLAGS += $(COVERAGE_FLAGS)
 SIM_BIN_NAME := sim_case_001
 RTL_SIM_BIN := $(RTL_DIR)/$(SIM_BIN_NAME)
 WOLF_SIM_BIN := $(WOLF_DIR)/$(SIM_BIN_NAME)
-VERILATOR_PREFIX := V$(DUT_TOP)
+VERILATOR_PREFIX := V$(ct_piu_top)
 RTL_VERILATOR_MK := $(RTL_DIR)/$(VERILATOR_PREFIX).mk
 WOLF_VERILATOR_MK := $(WOLF_DIR)/$(VERILATOR_PREFIX).mk
 COV_DATA := $(RTL_DIR)/coverage.dat
@@ -38,7 +38,7 @@ run:
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_DIR)
-	@$(WOLF_SV_PARSER) --emit-sv --emit-json --top $(DUT_TOP) -o $(OUT) -f $(FILELIST)
+	@$(WOLF_SV_PARSER) --emit-sv --emit-json --top $(ct_piu_top) -o $(OUT) -f $(FILELIST)
 
 $(RTL_SIM_BIN): $(TB_SRC) $(FILELIST)
 	@if ! command -v $(VERILATOR) >/dev/null 2>&1; then \
@@ -47,7 +47,7 @@ $(RTL_SIM_BIN): $(TB_SRC) $(FILELIST)
 	fi
 	@mkdir -p $(RTL_DIR)
 	@$(VERILATOR) $(VERILATOR_FLAGS) --cc -f $(FILELIST) --exe $(TB_SRC) \
-		--top-module $(DUT_TOP) -Mdir $(RTL_DIR) -o $(SIM_BIN_NAME)
+		--top-module $(ct_piu_top) -Mdir $(RTL_DIR) -o $(SIM_BIN_NAME)
 	CCACHE_DISABLE=1 $(MAKE) -C $(RTL_DIR) -f $(RTL_VERILATOR_MK) $(SIM_BIN_NAME)
 
 $(WOLF_SIM_BIN): $(TB_SRC)
@@ -61,9 +61,9 @@ $(WOLF_SIM_BIN): $(TB_SRC)
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_DIR)
-	@$(WOLF_SV_PARSER) --emit-sv --emit-json --top $(DUT_TOP) -o $(OUT) -f $(FILELIST)
+	@$(WOLF_SV_PARSER) --emit-sv --emit-json --top $(ct_piu_top) -o $(OUT) -f $(FILELIST)
 	@$(VERILATOR) $(VERILATOR_FLAGS) --cc $(OUT) --exe $(TB_SRC) \
-		--top-module $(DUT_TOP) -Mdir $(WOLF_DIR) -o $(SIM_BIN_NAME)
+		--top-module $(ct_piu_top) -Mdir $(WOLF_DIR) -o $(SIM_BIN_NAME)
 	CCACHE_DISABLE=1 $(MAKE) -C $(WOLF_DIR) -f $(WOLF_VERILATOR_MK) $(SIM_BIN_NAME)
 
 run_c910_bug_case_ref: COVERAGE=1
