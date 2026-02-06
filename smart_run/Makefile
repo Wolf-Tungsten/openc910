@@ -24,14 +24,16 @@ SIM_FILELIST :=
 SIM = iverilog
 DUMP = off
 THREADS = 4
+SMART_RUN_DIR := $(CURDIR)
 WOLF_SV_PARSER ?= $(abspath $(CURDIR)/../../../../build/bin/wolf-sv-parser)
 WOLF_TOP ?= sim_top
-WOLF_EMIT_DIR ?= $(CURDIR)/work/wolf_emit
+WORK_DIR ?= $(CURDIR)/work
+WOLF_EMIT_DIR ?= $(WORK_DIR)/wolf_emit
 WOLF_EMITTED_SV ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.sv
-WOLF_FILELIST ?= -f ../logical/filelists/sim_wolf.fl
+WOLF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
 WOLF_EMIT_FLAGS ?= --emit-sv --top $(WOLF_TOP)
-VERILATOR_REF_FILELIST ?= -f ../logical/filelists/sim_wolf.fl
-VERILATOR_REF_CPP ?= ../logical/tb/tb_c910.cpp
+VERILATOR_REF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
+VERILATOR_REF_CPP ?= $(SMART_RUN_DIR)/logical/tb/tb_c910.cpp
 
 # Generate C++ in executable form
 VERILATOR_FLAGS += -cc --exe --no-timing
@@ -125,13 +127,13 @@ else
 endif
 
 ifeq ($(SIM), iverilog)
-    SIM_FILELIST := $(SIM_CASE_FILES) -f ${CODE_BASE_PATH}/gen_rtl/filelists/C910_asic_rtl.fl -c ../logical/filelists/smart.fl -c ../logical/filelists/tb.fl
+    SIM_FILELIST := $(SIM_CASE_FILES) -f ${CODE_BASE_PATH}/gen_rtl/filelists/C910_asic_rtl.fl -c $(SMART_RUN_DIR)/logical/filelists/smart.fl -c $(SMART_RUN_DIR)/logical/filelists/tb.fl
 else ifeq ($(SIM), verilator)
     SIM_FILELIST := $(WOLF_EMITTED_SV) $(VERILATOR_REF_CPP)
 else ifeq ($(SIM), verilator_ref)
     SIM_FILELIST := $(VERILATOR_REF_FILELIST) $(VERILATOR_REF_CPP)
 else
-    SIM_FILELIST := $(SIM_CASE_FILES) -f ../logical/filelists/sim.fl
+    SIM_FILELIST := $(SIM_CASE_FILES) -f $(SMART_RUN_DIR)/logical/filelists/sim.fl
 endif
 
 compile:
@@ -139,20 +141,20 @@ compile:
 	@echo "  [THead-smart] SIM = $(SIM)"
 ifeq ($(SIM), vcs)
 	@make -s cleansim
-	@cd ./work && vcs $(SIMULATOR_OPT) $(TIMESCALE) $(SIMULATOR_DEF) $(SIM_FILELIST) $(SIM_DUMP) $(SIMULATOR_LOG) $(SIMULATOR_POWER_OPT) 
+	@cd $(WORK_DIR) && vcs $(SIMULATOR_OPT) $(TIMESCALE) $(SIMULATOR_DEF) $(SIM_FILELIST) $(SIM_DUMP) $(SIMULATOR_LOG) $(SIMULATOR_POWER_OPT) 
 else 
     ifeq ($(SIM), nc) 
-	@cd ./work && irun $(SIMULATOR_OPT) $(TIMESCALE) $(SIMULATOR_DEF) $(SIM_FILELIST) $(SIM_DUMP) $(SIMULATOR_LOG) 
+	@cd $(WORK_DIR) && irun $(SIMULATOR_OPT) $(TIMESCALE) $(SIMULATOR_DEF) $(SIM_FILELIST) $(SIM_DUMP) $(SIMULATOR_LOG) 
     else
         ifeq ($(SIM), iverilog)
-	  @cd ./work && iverilog $(TIMESCALE) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIM_FILELIST) $(SIM_DUMP) $(SIMULATOR_LOG)
+	  @cd $(WORK_DIR) && iverilog $(TIMESCALE) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIM_FILELIST) $(SIM_DUMP) $(SIMULATOR_LOG)
         else
         ifeq ($(SIM), verilator)
 	      @make -s wolf_emit
-	      @cd ./work && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(SIM_FILELIST) $(SIM_DUMP)
+	      @cd $(WORK_DIR) && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(SIM_FILELIST) $(SIM_DUMP)
             else
             ifeq ($(SIM), verilator_ref)
-	      @cd ./work && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(SIM_FILELIST) $(SIM_DUMP)
+	      @cd $(WORK_DIR) && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(SIM_FILELIST) $(SIM_DUMP)
             else
 	      @echo "  [THead-smart] Please specify SIM = vcs to use VCS, or SIM = nc ,or SIM = verilator or SIM = verilator_ref to use Verilator ..."
             endif
@@ -168,16 +170,16 @@ wolf_emit:
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_EMIT_DIR)
-	@cd ./work && $(WOLF_SV_PARSER) $(WOLF_EMIT_FLAGS) -o $(WOLF_EMITTED_SV) $(WOLF_FILELIST)
+	@cd $(WORK_DIR) && $(WOLF_SV_PARSER) $(WOLF_EMIT_FLAGS) -o $(WOLF_EMITTED_SV) $(WOLF_FILELIST)
 
 buildVerilator:
 	@mkdir -p $(CCACHE_DIR)
-	@cp ./logical/tb/Makefile_obj ./work/Makefile_obj
-	@cd ./work && make -j -C obj_dir -f ../Makefile_obj
+	@cp ./logical/tb/Makefile_obj $(WORK_DIR)/Makefile_obj
+	@cd $(WORK_DIR) && make -j -C obj_dir -f ../Makefile_obj
 cleansim:
-	@cd ./work && rm -rf simv* csrc ucli.key *.vcs.log novas_dump.log *.fsdb
+	@cd $(WORK_DIR) && rm -rf simv* csrc ucli.key *.vcs.log novas_dump.log *.fsdb
 cleanVerilator:
-	@cd ./work && rm -rf obj_dir/
+	@cd $(WORK_DIR) && rm -rf obj_dir/
 
 ################################################################################
 # Cases related
@@ -206,14 +208,14 @@ endif
 
 
 cleancase:
-	@cd ./work && rm -rf *.s *.S *.c *.o *.pat *.h *.lcf *.hex *.obj *.vh *.v *.report *.elf Makefile *.case.log
+	@cd $(WORK_DIR) && rm -rf *.s *.S *.c *.o *.pat *.h *.lcf *.hex *.obj *.vh *.v *.report *.elf Makefile *.case.log
 
 ################################################################################
 # Combined flows
 ################################################################################
 # Execute one case
 runVerilator:
-	@cd ./work && obj_dir/Vsim_top
+	@cd $(WORK_DIR) && obj_dir/Vsim_top
 
 runcase:
 	@make cleanVerilator
@@ -227,16 +229,16 @@ ifeq ($(findstring $(CASE), $(CASE_LIST)), $(CASE))
 	@make -s compile
 	@make -s buildcase CASE=$(CASE)
 ifeq ($(SIM), vcs)
-	cd ./work && ./simv -l run.vcs.log $(SIMV_POWER_OPT)
+	cd $(WORK_DIR) && ./simv -l run.vcs.log $(SIMV_POWER_OPT)
 else
         ifeq ($(SIM), nc)	
-		cd ./work && irun -R -l run.irun.log
+		cd $(WORK_DIR) && irun -R -l run.irun.log
         else
             ifneq (,$(filter $(SIM),verilator verilator_ref))
 		make buildVerilator
-		cd ./work && obj_dir/Vsim_top	
+		cd $(WORK_DIR) && obj_dir/Vsim_top	
             else
-	        cd ./work && vvp xuantie_core.vvp 
+	        cd $(WORK_DIR) && vvp xuantie_core.vvp 
             endif
         endif
 endif
@@ -250,9 +252,9 @@ endif
 regress:
 	rm -rf ./tests/regress/regress_result/*
 	@(for case in $(CASE_LIST) ; do \
-	 rm -rf ./work/* ; \
+	 rm -rf $(WORK_DIR)/* ; \
 	 make -s runcase CASE=$$case; \
-	 cp ./work/run_case.report ./tests/regress/regress_result/$$case.report; \
+	 cp $(WORK_DIR)/run_case.report ./tests/regress/regress_result/$$case.report; \
 	 done)
 	cd ./tests/regress && perl report_gen.pl
 	cat ./tests/regress/regress_report
@@ -264,11 +266,11 @@ regress:
 
 memlist:
 	@make -s compile
-	${VERDI_HOME}/share/VIA/Apps/Bin/findInstDefWild.pl -dbdir ./work/simv.daidir -pattern "ct_spsram*" -scope "tb.x_soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top" -dump_def_name -outlog ./work/memlist.verdi.log
+	${VERDI_HOME}/share/VIA/Apps/Bin/findInstDefWild.pl -dbdir $(WORK_DIR)/simv.daidir -pattern "ct_spsram*" -scope "tb.x_soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top" -dump_def_name -outlog $(WORK_DIR)/memlist.verdi.log
 	perl impl/memlist/memlist.pl 
 
 clean:
-	@cd ./work && rm -rf * 
+	@cd $(WORK_DIR) && rm -rf * 
 
 help:
 	@echo "  ########## Smart Help Info ##########"
@@ -282,9 +284,9 @@ help:
 	@echo "    runcase CASE=[casename]         : run the case [casename]";
 	@echo "    regress                         : run all cases and summarize the regress result";
 	@echo "    memlist                         : generate sram list with the help of VCS/Verdi";
-	@echo "    cleansim                        : clean files generated by simulator in ./work ";
-	@echo "    cleancase                       : clean files generated by GNU in ./work ";
-	@echo "    clean                           : clean ./work ";
+	@echo "    cleansim                        : clean files generated by simulator in $(WORK_DIR) ";
+	@echo "    cleancase                       : clean files generated by GNU in $(WORK_DIR) ";
+	@echo "    clean                           : clean $(WORK_DIR) ";
 	@echo "  Optional arguments:";
 	@echo "    SIM=                            : options: vcs / nc / verilator / verilator_ref(use version 4.215 or newer)"; 
 	@echo "    CASE=                           : options: the list print by 'make showcase'"; 
@@ -301,5 +303,5 @@ help:
 	@echo "    make runVerilator                            : run simulation file with Verilator";
 	
 # Keep ccache under the project workspace to avoid permission issues.
-CCACHE_DIR ?= $(CURDIR)/work/.ccache
+CCACHE_DIR ?= $(WORK_DIR)/.ccache
 export CCACHE_DIR
