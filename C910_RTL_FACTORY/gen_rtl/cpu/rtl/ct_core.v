@@ -940,6 +940,13 @@ output           rtu_yy_xx_retire1;
 output           rtu_yy_xx_retire2;                      
 
 // &Regs; @29
+reg     [31:0]  dbg_core_cycle;                             
+reg             dbg_idu_lsu_pipe3_sel_q;                    
+reg             dbg_idu_lsu_pipe4_sel_q;                    
+reg             dbg_idu_lsu_pipe3_ldr_q;                    
+reg             dbg_idu_lsu_pipe4_str_q;                    
+reg     [1 :0]  dbg_idu_lsu_pipe3_type_q;                   
+reg     [1 :0]  dbg_idu_lsu_pipe4_type_q;                   
 
 // &Wires; @30
 wire    [39 :0]  biu_cp0_apb_base;                       
@@ -1360,6 +1367,59 @@ wire             idu_lsu_rf_pipe4_st;
 wire             idu_lsu_rf_pipe4_staddr;                
 wire             idu_lsu_rf_pipe4_sync_fence;            
 wire             idu_lsu_rf_pipe4_unalign_2nd;           
+ 
+// IDU->LSU pipe3/4 toggles (debug)
+always @(posedge forever_cpuclk or negedge idu_rst_b)
+begin
+  if (!idu_rst_b) begin
+    dbg_core_cycle <= 32'b0;
+    dbg_idu_lsu_pipe3_sel_q <= 1'b0;
+    dbg_idu_lsu_pipe4_sel_q <= 1'b0;
+    dbg_idu_lsu_pipe3_ldr_q <= 1'b0;
+    dbg_idu_lsu_pipe4_str_q <= 1'b0;
+    dbg_idu_lsu_pipe3_type_q <= 2'b0;
+    dbg_idu_lsu_pipe4_type_q <= 2'b0;
+  end else begin
+    dbg_core_cycle <= dbg_core_cycle + 1'b1;
+    if (dbg_core_cycle < 32'd20000) begin
+      if (idu_lsu_rf_pipe3_sel != dbg_idu_lsu_pipe3_sel_q) begin
+        $display("[c910-core-idu] cycle=%0d pipe3_sel %0d->%0d",
+                 dbg_core_cycle, dbg_idu_lsu_pipe3_sel_q, idu_lsu_rf_pipe3_sel);
+      end
+      if (idu_lsu_rf_pipe4_sel != dbg_idu_lsu_pipe4_sel_q) begin
+        $display("[c910-core-idu] cycle=%0d pipe4_sel %0d->%0d",
+                 dbg_core_cycle, dbg_idu_lsu_pipe4_sel_q, idu_lsu_rf_pipe4_sel);
+      end
+      if (idu_lsu_rf_pipe3_inst_ldr != dbg_idu_lsu_pipe3_ldr_q) begin
+        $display("[c910-core-idu] cycle=%0d pipe3_ldr %0d->%0d",
+                 dbg_core_cycle, dbg_idu_lsu_pipe3_ldr_q,
+                 idu_lsu_rf_pipe3_inst_ldr);
+      end
+      if (idu_lsu_rf_pipe4_inst_str != dbg_idu_lsu_pipe4_str_q) begin
+        $display("[c910-core-idu] cycle=%0d pipe4_str %0d->%0d",
+                 dbg_core_cycle, dbg_idu_lsu_pipe4_str_q,
+                 idu_lsu_rf_pipe4_inst_str);
+      end
+      if (idu_lsu_rf_pipe3_inst_type != dbg_idu_lsu_pipe3_type_q) begin
+        $display("[c910-core-idu] cycle=%0d pipe3_type 0x%0h->0x%0h",
+                 dbg_core_cycle, dbg_idu_lsu_pipe3_type_q,
+                 idu_lsu_rf_pipe3_inst_type);
+      end
+      if (idu_lsu_rf_pipe4_inst_type != dbg_idu_lsu_pipe4_type_q) begin
+        $display("[c910-core-idu] cycle=%0d pipe4_type 0x%0h->0x%0h",
+                 dbg_core_cycle, dbg_idu_lsu_pipe4_type_q,
+                 idu_lsu_rf_pipe4_inst_type);
+      end
+    end
+    dbg_idu_lsu_pipe3_sel_q <= idu_lsu_rf_pipe3_sel;
+    dbg_idu_lsu_pipe4_sel_q <= idu_lsu_rf_pipe4_sel;
+    dbg_idu_lsu_pipe3_ldr_q <= idu_lsu_rf_pipe3_inst_ldr;
+    dbg_idu_lsu_pipe4_str_q <= idu_lsu_rf_pipe4_inst_str;
+    dbg_idu_lsu_pipe3_type_q <= idu_lsu_rf_pipe3_inst_type;
+    dbg_idu_lsu_pipe4_type_q <= idu_lsu_rf_pipe4_inst_type;
+  end
+end
+
 wire             idu_lsu_rf_pipe5_gateclk_sel;           
 wire    [11 :0]  idu_lsu_rf_pipe5_sdiq_entry;            
 wire             idu_lsu_rf_pipe5_sel;                   
@@ -5172,5 +5232,3 @@ ct_rtu_top  x_ct_rtu_top (
 
 // &ModuleEnd; @91
 endmodule
-
-

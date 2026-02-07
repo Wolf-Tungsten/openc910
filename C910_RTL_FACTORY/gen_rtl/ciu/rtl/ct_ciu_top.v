@@ -730,6 +730,13 @@ output           pwrite;
 
 // &Regs; @24
 reg              ciu_top_clk_en_f;              
+reg     [31:0]  dbg_ciu_cycle;                  
+reg             dbg_ibiu_arvalid_q;             
+reg     [39:0]  dbg_ibiu_araddr_q;              
+reg             dbg_ebiuif_arvalid_q;           
+reg     [39:0]  dbg_ebiuif_araddr_q;            
+reg             dbg_biu_pad_arvalid_q;          
+reg     [39:0]  dbg_biu_pad_araddr_q;           
 
 // &Wires; @25
 wire             apb_clk_en;                    
@@ -4120,6 +4127,48 @@ gated_clk_cell  x_ciu_top_gated_clk (
 // &Force("output", "ciu_top_clk"); @780
 
 
+// CIU AR path toggles (debug)
+always @(posedge forever_cpuclk or negedge cpurst_b)
+begin
+  if (!cpurst_b) begin
+    dbg_ciu_cycle <= 32'b0;
+    dbg_ibiu_arvalid_q <= 1'b0;
+    dbg_ibiu_araddr_q <= 40'b0;
+    dbg_ebiuif_arvalid_q <= 1'b0;
+    dbg_ebiuif_araddr_q <= 40'b0;
+    dbg_biu_pad_arvalid_q <= 1'b0;
+    dbg_biu_pad_araddr_q <= 40'b0;
+  end else begin
+    dbg_ciu_cycle <= dbg_ciu_cycle + 1'b1;
+    if (dbg_ciu_cycle < 32'd20000) begin
+      if ((ibiu0_pad_arvalid != dbg_ibiu_arvalid_q) ||
+          (ibiu0_pad_araddr != dbg_ibiu_araddr_q) ||
+          (ebiuif_ebiu_arvalid != dbg_ebiuif_arvalid_q) ||
+          (ebiuif_ebiu_araddr != dbg_ebiuif_araddr_q) ||
+          (biu_pad_arvalid != dbg_biu_pad_arvalid_q) ||
+          (biu_pad_araddr != dbg_biu_pad_araddr_q)) begin
+        $display("[c910-ciu] cycle=%0d ibiu_v %0d->%0d ibiu_a=0x%0x ebiuif_v %0d->%0d ebiuif_a=0x%0x pad_v %0d->%0d pad_a=0x%0x",
+                 dbg_ciu_cycle,
+                 dbg_ibiu_arvalid_q, ibiu0_pad_arvalid, ibiu0_pad_araddr,
+                 dbg_ebiuif_arvalid_q, ebiuif_ebiu_arvalid, ebiuif_ebiu_araddr,
+                 dbg_biu_pad_arvalid_q, biu_pad_arvalid, biu_pad_araddr);
+      end
+      if ((dbg_ciu_cycle >= 32'd2480) && (dbg_ciu_cycle <= 32'd2520)) begin
+        $display("[c910-ciu] cycle=%0d win ibiu_v=%0d ibiu_a=0x%0x ebiuif_v=%0d ebiuif_a=0x%0x pad_v=%0d pad_a=0x%0x",
+                 dbg_ciu_cycle, ibiu0_pad_arvalid, ibiu0_pad_araddr,
+                 ebiuif_ebiu_arvalid, ebiuif_ebiu_araddr,
+                 biu_pad_arvalid, biu_pad_araddr);
+      end
+    end
+    dbg_ibiu_arvalid_q <= ibiu0_pad_arvalid;
+    dbg_ibiu_araddr_q <= ibiu0_pad_araddr;
+    dbg_ebiuif_arvalid_q <= ebiuif_ebiu_arvalid;
+    dbg_ebiuif_araddr_q <= ebiuif_ebiu_araddr;
+    dbg_biu_pad_arvalid_q <= biu_pad_arvalid;
+    dbg_biu_pad_araddr_q <= biu_pad_araddr;
+  end
+end
+
 //==========================================================
 //             DEBUG INFORMATION
 //==========================================================
@@ -4138,7 +4187,5 @@ assign ciu_dbg_info[292:0] = {ncq_dbg_info[4:0],
                               ctcq_dbg_info[55:0]};
 // &ModuleEnd; @813
 endmodule
-
-
 
 

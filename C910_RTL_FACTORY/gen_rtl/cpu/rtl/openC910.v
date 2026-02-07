@@ -218,6 +218,10 @@ output           had_pad_jtg_tdo_en;
 
 //&Ports;
 // &Regs; @44
+reg     [31:0]  dbg_open_cycle;        
+reg             dbg_open_arvalid_q;    
+reg     [39:0]  dbg_open_araddr_q;     
+reg             dbg_open_arready_q;    
 
 // &Wires; @45
 wire             apb_clk;                       
@@ -1873,6 +1877,35 @@ ct_had_common_top  x_ct_had_common_top (
 // &Instance("ct_coverage"); @1569
 
 
+// openC910 AR path toggles (debug)
+always @(posedge pll_cpu_clk or negedge pad_cpu_rst_b)
+begin
+  if (!pad_cpu_rst_b) begin
+    dbg_open_cycle <= 32'b0;
+    dbg_open_arvalid_q <= 1'b0;
+    dbg_open_araddr_q <= 40'b0;
+    dbg_open_arready_q <= 1'b0;
+  end else begin
+    dbg_open_cycle <= dbg_open_cycle + 1'b1;
+    if (dbg_open_cycle < 32'd20000) begin
+      if ((biu_pad_arvalid != dbg_open_arvalid_q) ||
+          (biu_pad_araddr != dbg_open_araddr_q) ||
+          (pad_biu_arready != dbg_open_arready_q)) begin
+        $display("[c910-open] cycle=%0d arvalid %0d->%0d araddr=0x%0x arready %0d->%0d",
+                 dbg_open_cycle, dbg_open_arvalid_q, biu_pad_arvalid,
+                 biu_pad_araddr, dbg_open_arready_q, pad_biu_arready);
+      end
+      if ((dbg_open_cycle >= 32'd2480) && (dbg_open_cycle <= 32'd2520)) begin
+        $display("[c910-open] cycle=%0d win arvalid=%0d araddr=0x%0x arready=%0d",
+                 dbg_open_cycle, biu_pad_arvalid, biu_pad_araddr, pad_biu_arready);
+      end
+    end
+    dbg_open_arvalid_q <= biu_pad_arvalid;
+    dbg_open_araddr_q <= biu_pad_araddr;
+    dbg_open_arready_q <= pad_biu_arready;
+  end
+end
+
 assign core2_cpu_no_retire = 1'b0;
 assign core3_cpu_no_retire = 1'b0;
 assign cpu_debug_port = core0_cpu_no_retire
@@ -1883,6 +1916,4 @@ assign cpu_debug_port = core0_cpu_no_retire
 
 // &ModuleEnd; @1597
 endmodule
-
-
 

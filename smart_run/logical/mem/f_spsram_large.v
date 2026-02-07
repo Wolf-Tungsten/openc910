@@ -199,6 +199,7 @@ begin
       last_mem_cen <= mem_cen;
     end
   end
+
 end
 
 assign ram0_wen = !mem_cen && !mem_wen[0];

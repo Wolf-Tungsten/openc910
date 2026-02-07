@@ -982,5 +982,3 @@ assign ibctrl_debug_ib_vld          = ib_data_vld;
 
 // &ModuleEnd;                          @556
 endmodule
-
-

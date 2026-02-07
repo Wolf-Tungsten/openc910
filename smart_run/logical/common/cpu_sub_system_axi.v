@@ -202,6 +202,10 @@ wire     [7  : 0]     biu_pad_wid;
 wire     [63 : 0]     xx_intc_int;            
 wire     [39 : 0]     xx_intc_vld;            
 reg      [63 : 0]     pad_cpu_sys_cnt;
+reg      [31 : 0]     dbg_cpu_axi_cycle;
+reg                  dbg_cpu_biu_arvalid_q;
+reg      [39 : 0]     dbg_cpu_biu_araddr_q;
+reg                  dbg_cpu_pad_arready_q;
 
 ///////////////////////////////////////////////////
 // Module Instantiation 
@@ -361,6 +365,35 @@ begin
     pad_cpu_sys_cnt <= 64'b0;
   else
     pad_cpu_sys_cnt <= pad_cpu_sys_cnt + 1'b1;
+end
+
+// CPU subsystem AR path toggles (debug)
+always @(posedge pll_cpu_clk or negedge pad_cpu_rst_b)
+begin
+  if (!pad_cpu_rst_b) begin
+    dbg_cpu_axi_cycle <= 32'b0;
+    dbg_cpu_biu_arvalid_q <= 1'b0;
+    dbg_cpu_biu_araddr_q <= 40'b0;
+    dbg_cpu_pad_arready_q <= 1'b0;
+  end else begin
+    dbg_cpu_axi_cycle <= dbg_cpu_axi_cycle + 1'b1;
+    if (dbg_cpu_axi_cycle < 32'd20000) begin
+      if ((biu_pad_arvalid != dbg_cpu_biu_arvalid_q) ||
+          (biu_pad_araddr != dbg_cpu_biu_araddr_q) ||
+          (pad_biu_arready != dbg_cpu_pad_arready_q)) begin
+        $display("[c910-cpu-axi] cycle=%0d arvalid %0d->%0d araddr=0x%0x arready %0d->%0d",
+                 dbg_cpu_axi_cycle, dbg_cpu_biu_arvalid_q, biu_pad_arvalid,
+                 biu_pad_araddr, dbg_cpu_pad_arready_q, pad_biu_arready);
+      end
+      if ((dbg_cpu_axi_cycle >= 32'd2480) && (dbg_cpu_axi_cycle <= 32'd2520)) begin
+        $display("[c910-cpu-axi] cycle=%0d win arvalid=%0d araddr=0x%0x arready=%0d",
+                 dbg_cpu_axi_cycle, biu_pad_arvalid, biu_pad_araddr, pad_biu_arready);
+      end
+    end
+    dbg_cpu_biu_arvalid_q <= biu_pad_arvalid;
+    dbg_cpu_biu_araddr_q <= biu_pad_araddr;
+    dbg_cpu_pad_arready_q <= pad_biu_arready;
+  end
 end
 
 // External Interrupts

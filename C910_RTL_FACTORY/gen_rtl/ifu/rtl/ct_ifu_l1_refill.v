@@ -789,5 +789,3 @@ assign l1_refill_debug_refill_st[3:0] = refill_cur_state[3:0];
 
 // &ModuleEnd; @601
 endmodule
-
-

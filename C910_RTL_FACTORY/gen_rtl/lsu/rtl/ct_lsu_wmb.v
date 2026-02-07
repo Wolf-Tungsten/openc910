@@ -4745,5 +4745,3 @@ assign lsu_had_wmb_data_ptr[WMB_ENTRY-1:0]    = wmb_data_ptr[WMB_ENTRY-1:0];
 
 // &ModuleEnd; @1923
 endmodule
-
-

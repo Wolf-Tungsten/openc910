@@ -186,7 +186,6 @@ reg     [177:0]  id_split_short1_inst1_data;
 reg     [3  :0]  id_split_short2_dep_info;       
 reg     [177:0]  id_split_short2_inst0_data;     
 reg     [177:0]  id_split_short2_inst1_data;     
-
 // &Wires; @30
 wire             cp0_idu_cskyee;                 
 wire    [2  :0]  cp0_idu_frm;                    
@@ -1769,5 +1768,3 @@ end
 
 // &ModuleEnd; @896
 endmodule
-
-

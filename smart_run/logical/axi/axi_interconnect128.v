@@ -240,7 +240,6 @@ reg     [1  :0]  rresp;
 reg              rvalid;           
 reg              wready;           
 
-
 wire             aclk;             
 wire    [39 :0]  araddr;           
 wire             aresetn;          
@@ -658,7 +657,7 @@ end
 
   assign rsel1 = (!read_done0)&&(!read_done2)&&(!read_done3)&&rvalid_s1
                  &&((!rvalid_s0) || read_done1);
-  
+
   always @(posedge aclk or negedge aresetn)
   begin
     if(!aresetn)
@@ -764,5 +763,3 @@ end
 
 
 endmodule
-
-

@@ -998,5 +998,3 @@ assign ipb_debug_wb_cur_st[2:0]  = wb_cur_st[2:0];
 
 // &ModuleEnd; @645
 endmodule
-
-

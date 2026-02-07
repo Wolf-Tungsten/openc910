@@ -2381,5 +2381,3 @@ assign pfb_no_req_cnt_val[5:0]  = cp0_lsu_timeout_cnt[29:24];
 
 // &ModuleEnd; @834
 endmodule
-
-

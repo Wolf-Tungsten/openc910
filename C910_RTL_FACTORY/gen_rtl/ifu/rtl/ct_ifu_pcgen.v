@@ -1072,5 +1072,3 @@ assign pcgen_debug_pcbus[13:0] = pc_bus[13:0];
 
 // &ModuleEnd; @654
 endmodule
-
-

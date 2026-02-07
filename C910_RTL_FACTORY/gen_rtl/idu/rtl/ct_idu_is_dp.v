@@ -823,6 +823,15 @@ reg     [270:0]  is_viq1_create1_data;
 reg     [6  :0]  is_viq1_create1_iid;                    
 reg     [7  :0]  is_viq1_create1_lch_rdy_viq0;           
 reg     [7  :0]  is_viq1_create1_lch_rdy_viq1;           
+reg     [31 :0]  dbg_is_dp_cycle;                        
+reg     [1  :0]  dbg_is_dp_lsiq_sel0_q;                  
+reg     [1  :0]  dbg_is_dp_lsiq_sel1_q;                  
+reg              dbg_is_dp_lsiq_dp_en0_q;                
+reg              dbg_is_dp_lsiq_dp_en1_q;                
+reg              dbg_is_dp_lsiq_create0_load_q;          
+reg              dbg_is_dp_lsiq_create0_store_q;         
+reg              dbg_is_dp_lsiq_create1_load_q;          
+reg              dbg_is_dp_lsiq_create1_store_q;         
 
 // &Wires; @29
 wire    [7  :0]  aiq0_aiq_create0_entry;                 
@@ -6325,7 +6334,66 @@ assign dp_ctrl_is_dis_inst3_ctrl_info[IS_CTRL_DIV]     = is_inst3_read_data[IS_D
 assign dp_ctrl_is_dis_inst3_ctrl_info[IS_CTRL_MULT]    = is_inst3_read_data[IS_MULT];
 assign dp_ctrl_is_dis_inst3_ctrl_info[IS_CTRL_ALU]     = is_inst3_read_data[IS_ALU];
 
+// LSIQ dispatch selection toggles (debug)
+always @(posedge forever_cpuclk or negedge cpurst_b)
+begin
+  if (!cpurst_b) begin
+    dbg_is_dp_cycle <= 32'b0;
+    dbg_is_dp_lsiq_sel0_q <= 2'b0;
+    dbg_is_dp_lsiq_sel1_q <= 2'b0;
+    dbg_is_dp_lsiq_dp_en0_q <= 1'b0;
+    dbg_is_dp_lsiq_dp_en1_q <= 1'b0;
+    dbg_is_dp_lsiq_create0_load_q <= 1'b0;
+    dbg_is_dp_lsiq_create0_store_q <= 1'b0;
+    dbg_is_dp_lsiq_create1_load_q <= 1'b0;
+    dbg_is_dp_lsiq_create1_store_q <= 1'b0;
+  end else begin
+    dbg_is_dp_cycle <= dbg_is_dp_cycle + 1'b1;
+    if (dbg_is_dp_cycle < 32'd20000) begin
+      if (ctrl_dp_is_dis_lsiq_create0_sel != dbg_is_dp_lsiq_sel0_q) begin
+        $display("[c910-is-dp] cycle=%0d lsiq_sel0 %0d->%0d",
+                 dbg_is_dp_cycle, dbg_is_dp_lsiq_sel0_q, ctrl_dp_is_dis_lsiq_create0_sel);
+      end
+      if (ctrl_dp_is_dis_lsiq_create1_sel != dbg_is_dp_lsiq_sel1_q) begin
+        $display("[c910-is-dp] cycle=%0d lsiq_sel1 %0d->%0d",
+                 dbg_is_dp_cycle, dbg_is_dp_lsiq_sel1_q, ctrl_dp_is_dis_lsiq_create1_sel);
+      end
+      if (ctrl_lsiq_create0_dp_en != dbg_is_dp_lsiq_dp_en0_q) begin
+        $display("[c910-is-dp] cycle=%0d lsiq_dp_en0 %0d->%0d",
+                 dbg_is_dp_cycle, dbg_is_dp_lsiq_dp_en0_q, ctrl_lsiq_create0_dp_en);
+      end
+      if (ctrl_lsiq_create1_dp_en != dbg_is_dp_lsiq_dp_en1_q) begin
+        $display("[c910-is-dp] cycle=%0d lsiq_dp_en1 %0d->%0d",
+                 dbg_is_dp_cycle, dbg_is_dp_lsiq_dp_en1_q, ctrl_lsiq_create1_dp_en);
+      end
+      if (dp_lsiq_create0_load != dbg_is_dp_lsiq_create0_load_q) begin
+        $display("[c910-is-dp] cycle=%0d create0_load %0d->%0d",
+                 dbg_is_dp_cycle, dbg_is_dp_lsiq_create0_load_q, dp_lsiq_create0_load);
+      end
+      if (dp_lsiq_create0_store != dbg_is_dp_lsiq_create0_store_q) begin
+        $display("[c910-is-dp] cycle=%0d create0_store %0d->%0d",
+                 dbg_is_dp_cycle, dbg_is_dp_lsiq_create0_store_q, dp_lsiq_create0_store);
+      end
+      if (dp_lsiq_create1_load != dbg_is_dp_lsiq_create1_load_q) begin
+        $display("[c910-is-dp] cycle=%0d create1_load %0d->%0d",
+                 dbg_is_dp_cycle, dbg_is_dp_lsiq_create1_load_q, dp_lsiq_create1_load);
+      end
+      if (dp_lsiq_create1_store != dbg_is_dp_lsiq_create1_store_q) begin
+        $display("[c910-is-dp] cycle=%0d create1_store %0d->%0d",
+                 dbg_is_dp_cycle, dbg_is_dp_lsiq_create1_store_q, dp_lsiq_create1_store);
+      end
+    end
+    dbg_is_dp_lsiq_sel0_q <= ctrl_dp_is_dis_lsiq_create0_sel;
+    dbg_is_dp_lsiq_sel1_q <= ctrl_dp_is_dis_lsiq_create1_sel;
+    dbg_is_dp_lsiq_dp_en0_q <= ctrl_lsiq_create0_dp_en;
+    dbg_is_dp_lsiq_dp_en1_q <= ctrl_lsiq_create1_dp_en;
+    dbg_is_dp_lsiq_create0_load_q <= dp_lsiq_create0_load;
+    dbg_is_dp_lsiq_create0_store_q <= dp_lsiq_create0_store;
+    dbg_is_dp_lsiq_create1_load_q <= dp_lsiq_create1_load;
+    dbg_is_dp_lsiq_create1_store_q <= dp_lsiq_create1_store;
+  end
+end
+
 // &ModuleEnd; @4124
 endmodule
-
 

@@ -1132,7 +1132,6 @@ reg             l0_btb_update_ras_bit;
 reg             l0_btb_update_vld_bit;           
 reg     [3 :0]  l0_btb_wen;                      
 reg             pc_oper_updt_vld;                
-
 // &Wires; @25
 wire            buf_stall;                       
 wire            bypass_inst_vld;                 
@@ -2927,5 +2926,3 @@ assign ibdp_debug_inst2_vld    = inst2_vld;
 
 // &ModuleEnd;                         @1001
 endmodule
-
-

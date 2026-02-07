@@ -2913,5 +2913,3 @@ assign lsu_had_rb_entry_fence[RB_ENTRY-1:0] = rb_entry_fence[RB_ENTRY-1:0];
 
 // &ModuleEnd; @1053
 endmodule
-
-

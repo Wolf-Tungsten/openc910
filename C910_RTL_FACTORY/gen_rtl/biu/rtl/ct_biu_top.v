@@ -466,6 +466,10 @@ output           biu_xx_snoop_vld;
 output           biu_yy_xx_no_op;         
 
 // &Regs; @24
+reg     [31:0]  dbg_biu_top_cycle;        
+reg             dbg_biu_top_arvalid_q;    
+reg     [39:0]  dbg_biu_top_araddr_q;     
+reg             dbg_biu_top_arready_q;    
 
 // &Wires; @25
 wire             accpuclk;                
@@ -1241,14 +1245,39 @@ ct_biu_other_io_sync  x_ct_biu_other_io_sync (
   .pad_yy_icg_scan_en    (pad_yy_icg_scan_en   )
 );
 
+// BIU top AR path toggles (debug)
+always @(posedge forever_coreclk or negedge cpurst_b)
+begin
+  if (!cpurst_b) begin
+    dbg_biu_top_cycle <= 32'b0;
+    dbg_biu_top_arvalid_q <= 1'b0;
+    dbg_biu_top_araddr_q <= 40'b0;
+    dbg_biu_top_arready_q <= 1'b0;
+  end else begin
+    dbg_biu_top_cycle <= dbg_biu_top_cycle + 1'b1;
+    if (dbg_biu_top_cycle < 32'd20000) begin
+      if ((biu_pad_arvalid != dbg_biu_top_arvalid_q) ||
+          (biu_pad_araddr != dbg_biu_top_araddr_q) ||
+          (pad_biu_arready != dbg_biu_top_arready_q)) begin
+        $display("[c910-biu-top] cycle=%0d arvalid %0d->%0d araddr=0x%0x arready %0d->%0d",
+                 dbg_biu_top_cycle, dbg_biu_top_arvalid_q, biu_pad_arvalid,
+                 biu_pad_araddr, dbg_biu_top_arready_q, pad_biu_arready);
+      end
+      if ((dbg_biu_top_cycle >= 32'd2480) && (dbg_biu_top_cycle <= 32'd2520)) begin
+        $display("[c910-biu-top] cycle=%0d win arvalid=%0d araddr=0x%0x arready=%0d",
+                 dbg_biu_top_cycle, biu_pad_arvalid, biu_pad_araddr, pad_biu_arready);
+      end
+    end
+    dbg_biu_top_arvalid_q <= biu_pad_arvalid;
+    dbg_biu_top_araddr_q <= biu_pad_araddr;
+    dbg_biu_top_arready_q <= pad_biu_arready;
+  end
+end
+
 
 
 
 
 // &ModuleEnd; @70
 endmodule
-
-
-
-
 

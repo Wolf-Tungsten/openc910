@@ -1392,5 +1392,3 @@ assign ifctrl_debug_inv_st[3:0]    = icache_inv_cur_state[3:0];
 
 // &ModuleEnd; @947
 endmodule
-
-

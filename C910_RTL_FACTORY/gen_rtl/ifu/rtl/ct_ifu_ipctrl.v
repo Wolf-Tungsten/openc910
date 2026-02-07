@@ -410,7 +410,6 @@ reg     [19:0]  way1_chgflw_pc_ntake;
 reg     [19:0]  way1_chgflw_pc_taken;                
 reg     [1 :0]  way1_way_pred_ntake;                 
 reg     [1 :0]  way1_way_pred_taken;                 
-
 // &Wires; @25
 wire    [1 :0]  bht_data;                            
 wire            bht_result;                          
@@ -2018,5 +2017,3 @@ assign ipctrl_debug_h0_vld                  = h0_vld;
 
 // &ModuleEnd; @1402
 endmodule
-
-

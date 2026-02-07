@@ -104,7 +104,6 @@ reg     [7 :0]  create_ptr;
 reg     [7 :0]  entry_vld;       
 reg     [7 :0]  pop_ptr;         
 
-
 wire            araddr_hit;      
 wire    [39:0]  biu_pad_araddr;  
 wire    [1 :0]  biu_pad_arburst; 
@@ -207,7 +206,6 @@ assign araddr_hit = (biu_pad_araddr[39:0] >=SRAM_START) && (biu_pad_araddr[39:0]
 
 assign create_vld = create_en && araddr_hit;
 assign counter_en[ENTRY_NUM-1:0] = {ENTRY_NUM{create_vld}} & create_ptr[ENTRY_NUM-1:0]; 
-
 
 fifo_counter  x_counter_entry0 (
   .counter_done    (counter_done[0]),
@@ -512,5 +510,3 @@ assign fifo_biu_arready =  create_en;
 
 
 endmodule
-
-

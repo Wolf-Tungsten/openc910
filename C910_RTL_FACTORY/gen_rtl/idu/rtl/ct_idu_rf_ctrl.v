@@ -425,6 +425,15 @@ reg     [15 :0]  rf_pipe6_vmla_vreg_fwd_vld;
 reg              rf_pipe7_inst_vld;                        
 reg     [3  :0]  rf_pipe7_vmla_rf_lch_vld;                 
 reg     [15 :0]  rf_pipe7_vmla_vreg_fwd_vld;               
+reg     [31:0]   dbg_rf_cycle;                             
+reg              dbg_lsiq_pipe3_issue_q;                   
+reg              dbg_lsiq_pipe4_issue_q;                   
+reg              dbg_rf_pipe3_inst_vld_q;                  
+reg              dbg_rf_pipe4_inst_vld_q;                  
+reg              dbg_ctrl_pipe3_pipedown_q;                
+reg              dbg_ctrl_pipe4_pipedown_q;                
+reg              dbg_ctrl_pipe3_lch_fail_q;                
+reg              dbg_ctrl_pipe4_lch_fail_q;                
 
 // &Wires; @30
 wire             aiq0_issue_alu_fwd_inst;                  
@@ -1320,6 +1329,66 @@ assign ctrl_rf_pipe6_pipedown_vld       = ctrl_rf_pipe6_inst_vld
 assign ctrl_rf_pipe7_pipedown_vld       = ctrl_rf_pipe7_inst_vld
                                           && !ctrl_rf_pipe7_lch_fail;
 
+// RF/LSIQ issue path toggles (debug)
+always @(posedge forever_cpuclk or negedge cpurst_b)
+begin
+  if (!cpurst_b) begin
+    dbg_rf_cycle <= 32'b0;
+    dbg_lsiq_pipe3_issue_q <= 1'b0;
+    dbg_lsiq_pipe4_issue_q <= 1'b0;
+    dbg_rf_pipe3_inst_vld_q <= 1'b0;
+    dbg_rf_pipe4_inst_vld_q <= 1'b0;
+    dbg_ctrl_pipe3_pipedown_q <= 1'b0;
+    dbg_ctrl_pipe4_pipedown_q <= 1'b0;
+    dbg_ctrl_pipe3_lch_fail_q <= 1'b0;
+    dbg_ctrl_pipe4_lch_fail_q <= 1'b0;
+  end else begin
+    dbg_rf_cycle <= dbg_rf_cycle + 1'b1;
+    if (dbg_rf_cycle < 32'd20000) begin
+      if (lsiq_xx_pipe3_issue_en != dbg_lsiq_pipe3_issue_q) begin
+        $display("[c910-rf-ctrl] cycle=%0d lsiq_pipe3_issue %0d->%0d",
+                 dbg_rf_cycle, dbg_lsiq_pipe3_issue_q, lsiq_xx_pipe3_issue_en);
+      end
+      if (lsiq_xx_pipe4_issue_en != dbg_lsiq_pipe4_issue_q) begin
+        $display("[c910-rf-ctrl] cycle=%0d lsiq_pipe4_issue %0d->%0d",
+                 dbg_rf_cycle, dbg_lsiq_pipe4_issue_q, lsiq_xx_pipe4_issue_en);
+      end
+      if (ctrl_rf_pipe3_inst_vld != dbg_rf_pipe3_inst_vld_q) begin
+        $display("[c910-rf-ctrl] cycle=%0d pipe3_inst_vld %0d->%0d",
+                 dbg_rf_cycle, dbg_rf_pipe3_inst_vld_q, ctrl_rf_pipe3_inst_vld);
+      end
+      if (ctrl_rf_pipe4_inst_vld != dbg_rf_pipe4_inst_vld_q) begin
+        $display("[c910-rf-ctrl] cycle=%0d pipe4_inst_vld %0d->%0d",
+                 dbg_rf_cycle, dbg_rf_pipe4_inst_vld_q, ctrl_rf_pipe4_inst_vld);
+      end
+      if (ctrl_rf_pipe3_pipedown_vld != dbg_ctrl_pipe3_pipedown_q) begin
+        $display("[c910-rf-ctrl] cycle=%0d pipe3_pipedown %0d->%0d",
+                 dbg_rf_cycle, dbg_ctrl_pipe3_pipedown_q, ctrl_rf_pipe3_pipedown_vld);
+      end
+      if (ctrl_rf_pipe4_pipedown_vld != dbg_ctrl_pipe4_pipedown_q) begin
+        $display("[c910-rf-ctrl] cycle=%0d pipe4_pipedown %0d->%0d",
+                 dbg_rf_cycle, dbg_ctrl_pipe4_pipedown_q, ctrl_rf_pipe4_pipedown_vld);
+      end
+      if (ctrl_rf_pipe3_lch_fail != dbg_ctrl_pipe3_lch_fail_q) begin
+        $display("[c910-rf-ctrl] cycle=%0d pipe3_lch_fail %0d->%0d",
+                 dbg_rf_cycle, dbg_ctrl_pipe3_lch_fail_q, ctrl_rf_pipe3_lch_fail);
+      end
+      if (ctrl_rf_pipe4_lch_fail != dbg_ctrl_pipe4_lch_fail_q) begin
+        $display("[c910-rf-ctrl] cycle=%0d pipe4_lch_fail %0d->%0d",
+                 dbg_rf_cycle, dbg_ctrl_pipe4_lch_fail_q, ctrl_rf_pipe4_lch_fail);
+      end
+    end
+    dbg_lsiq_pipe3_issue_q <= lsiq_xx_pipe3_issue_en;
+    dbg_lsiq_pipe4_issue_q <= lsiq_xx_pipe4_issue_en;
+    dbg_rf_pipe3_inst_vld_q <= ctrl_rf_pipe3_inst_vld;
+    dbg_rf_pipe4_inst_vld_q <= ctrl_rf_pipe4_inst_vld;
+    dbg_ctrl_pipe3_pipedown_q <= ctrl_rf_pipe3_pipedown_vld;
+    dbg_ctrl_pipe4_pipedown_q <= ctrl_rf_pipe4_pipedown_vld;
+    dbg_ctrl_pipe3_lch_fail_q <= ctrl_rf_pipe3_lch_fail;
+    dbg_ctrl_pipe4_lch_fail_q <= ctrl_rf_pipe4_lch_fail;
+  end
+end
+
 //----------------------------------------------------------
 //                 lch fail to clear iq frz
 //----------------------------------------------------------
@@ -1611,5 +1680,3 @@ assign idu_hpcp_rf_pipe5_reg_lch_fail_vld = ctrl_rf_hpcp_pipe5_rf_reg_lch_fail_v
 
 // &ModuleEnd; @869
 endmodule
-
-
