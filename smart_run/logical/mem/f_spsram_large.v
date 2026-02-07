@@ -81,6 +81,12 @@ wire    [ADDR_WIDTH-1:0]  mem_addr;
 wire            mem_cen;    
 wire    [127:0] mem_d;      
 wire    [15:0]  mem_wen;    
+reg     [31:0]  dbg_cycle;  
+reg             init_seen;  
+reg     [15:0]  post_init_cnt; 
+reg     [ADDR_WIDTH-1:0]  last_mem_addr; 
+reg             last_mem_cen; 
+reg             last_init_active; 
 wire    [7 :0]  ram0_din;    
 wire    [7 :0]  ram0_dout;   
 wire            ram0_wen;    
@@ -142,6 +148,59 @@ assign mem_cen = init_active ? 1'b0 : CEN;
 assign mem_d = init_active ? tb_init_wdata : D[127:0];
 assign mem_wen = init_active ? tb_init_wen : WEN[15:0];
 
+initial begin
+  dbg_cycle[31:0] = 32'b0;
+  init_seen = 1'b0;
+  post_init_cnt[15:0] = 16'b0;
+  last_mem_addr[ADDR_WIDTH-1:0] = {ADDR_WIDTH{1'b0}};
+  last_mem_cen = 1'b1;
+  last_init_active = 1'b0;
+end
+
+always @(posedge CLK)
+begin
+  dbg_cycle[31:0] <= dbg_cycle[31:0] + 1'b1;
+  if(last_init_active && !init_active) begin
+    $display("[spsram-init-done] cycle=%0d post=%0d addr_hold=0x%h mem_addr=0x%h tb_init_addr=0x%h mem_cen=%0d",
+             dbg_cycle, post_init_cnt[15:0], addr_holding[ADDR_WIDTH-1:0],
+             mem_addr[ADDR_WIDTH-1:0], tb_init_addr[ADDR_WIDTH-1:0], mem_cen);
+  end
+  last_init_active <= init_active;
+  if(init_active) begin
+    init_seen <= 1'b1;
+    post_init_cnt[15:0] <= 16'b0;
+  end else if(init_seen && post_init_cnt[15:0] != 16'hffff) begin
+    post_init_cnt[15:0] <= post_init_cnt[15:0] + 1'b1;
+  end
+
+  if(init_active && (tb_init_addr[20:0] < 21'h2)) begin
+    $display("[spsram-init] cycle=%0d addr=0x%h wen=0x%h wdata=0x%h mem_d=0x%h ram0=0x%h ram1=0x%h ram2=0x%h ram3=0x%h",
+             dbg_cycle, tb_init_addr[20:0], mem_wen[15:0],
+             tb_init_wdata[127:0], mem_d[127:0],
+             ram0_din[WRAP_WIDTH-1:0], ram1_din[WRAP_WIDTH-1:0],
+             ram2_din[WRAP_WIDTH-1:0], ram3_din[WRAP_WIDTH-1:0]);
+  end
+
+  if(!init_active && init_seen && (post_init_cnt[15:0] < 16'd16)) begin
+    $display("[spsram-post] cycle=%0d post=%0d mem_addr=0x%h mem_cen=%0d addr_hold=0x%h CEN=%0d A=0x%h",
+             dbg_cycle, post_init_cnt[15:0], mem_addr[ADDR_WIDTH-1:0],
+             mem_cen, addr_holding[ADDR_WIDTH-1:0], CEN, A[ADDR_WIDTH-1:0]);
+  end
+
+  if(!init_active && init_seen && (post_init_cnt[15:0] < 16'd5000) &&
+     (!mem_cen) && (mem_addr[ADDR_WIDTH-1:4] < 2)) begin
+    if((mem_addr[ADDR_WIDTH-1:0] != last_mem_addr[ADDR_WIDTH-1:0]) ||
+       (mem_cen != last_mem_cen)) begin
+      $display("[spsram-read] cycle=%0d post=%0d mem_addr=0x%h addr_hold=0x%h addr=0x%h mem_cen=%0d Q=0x%h",
+               dbg_cycle, post_init_cnt[15:0], mem_addr[ADDR_WIDTH-1:0],
+               addr_holding[ADDR_WIDTH-1:0], addr[ADDR_WIDTH-1:0],
+               mem_cen, Q[127:0]);
+      last_mem_addr[ADDR_WIDTH-1:0] <= mem_addr[ADDR_WIDTH-1:0];
+      last_mem_cen <= mem_cen;
+    end
+  end
+end
+
 assign ram0_wen = !mem_cen && !mem_wen[0];
 assign ram1_wen = !mem_cen && !mem_wen[1];
 assign ram2_wen = !mem_cen && !mem_wen[2];
@@ -185,6 +244,14 @@ assign ram15_din[WRAP_WIDTH-1:0] = mem_d[16*WRAP_WIDTH-1:15*WRAP_WIDTH];
 always@(posedge CLK)
 begin
   if(!mem_cen) begin
+    if(!init_active && init_seen && (post_init_cnt[15:0] < 16'd5000) &&
+       ((mem_addr[ADDR_WIDTH-1:4] < 2) ||
+        (mem_addr[ADDR_WIDTH-1:0] == 21'h07fff))) begin
+      $display("[spsram-hold] cycle=%0d post=%0d mem_addr=0x%h addr_hold_prev=0x%h addr_hold_next=0x%h mem_cen=%0d",
+               dbg_cycle, post_init_cnt[15:0], mem_addr[ADDR_WIDTH-1:0],
+               addr_holding[ADDR_WIDTH-1:0], mem_addr[ADDR_WIDTH-1:0],
+               mem_cen);
+    end
     addr_holding[ADDR_WIDTH-1:0] <= mem_addr[ADDR_WIDTH-1:0];
   end
 end
@@ -329,4 +396,3 @@ ram #(WRAP_WIDTH,ADDR_WIDTH) ram15(
 
 
 endmodule
-

@@ -117,8 +117,13 @@ reg     [15 :0]  mem_wen;
 reg     [1  :0]  next_state;     
 reg              read_dly;       
 reg     [7  :0]  read_step;      
+reg     [31 :0]  dbg_cycle;      
+reg              init_seen;      
+reg     [15 :0]  post_init_cnt;  
+reg     [39 :0]  last_mem_addr;  
 reg              rvalid;         
 reg     [7  :0]  write_step;     
+reg     [7  :0]  rd_dbg_cnt;     
 
 
 wire    [39 :0]  araddr_s0;      
@@ -345,6 +350,15 @@ assign wrap4_2 = (mem_addr[5:4]==2'b11)&&(((read_step[7:0]==8'h01)&&wrap4_read_e
 assign wrap4_3 = (mem_addr[5:4]==2'b11)&&(((read_step[7:0]==8'h02)&&wrap4_read_en)||
                  ((write_step[7:0]==8'h02)&&wrap4_write_en));
 
+wire mem_upd_from_ar = (cur_state[1:0] == IDLE) && arvalid_s0;
+wire mem_upd_from_aw = (cur_state[1:0] == IDLE) && awvalid_s0;
+wire mem_upd_wrap4 = (wrap4_1 || wrap4_2 || wrap4_3) &&
+                     ((wvalid_s0 && wready) || (rready_s0 && rvalid));
+wire mem_upd_wrap2 = wrap2_1 && ((wvalid_s0 && wready) || (rready_s0 && rvalid));
+wire mem_upd_step = (wvalid_s0 && wready) || (rready_s0 && rvalid);
+wire mem_upd_any = mem_upd_from_ar || mem_upd_from_aw || mem_upd_wrap4 ||
+                   mem_upd_wrap2 || mem_upd_step;
+
 always @ (posedge pll_core_cpuclk or negedge pad_cpu_rst_b)
 begin
   if(!pad_cpu_rst_b)
@@ -501,6 +515,86 @@ begin
 
 end
 
+always @ (posedge pll_core_cpuclk or negedge pad_cpu_rst_b)
+begin
+  if(!pad_cpu_rst_b)
+      dbg_cycle[31:0] <= 32'b0;
+  else
+      dbg_cycle[31:0] <= dbg_cycle[31:0] + 1'b1;
+end
+
+always @ (posedge pll_core_cpuclk or negedge pad_cpu_rst_b)
+begin
+  if(!pad_cpu_rst_b) begin
+    init_seen <= 1'b0;
+    post_init_cnt[15:0] <= 16'b0;
+    last_mem_addr[39:0] <= 40'b0;
+    rd_dbg_cnt[7:0] <= 8'b0;
+  end
+  else begin
+    if(!init_seen) begin
+      init_seen <= 1'b1;
+    end
+    if(tb_init_en) begin
+      post_init_cnt[15:0] <= 16'b0;
+    end
+    else if(init_seen && post_init_cnt[15:0] != 16'hffff) begin
+      post_init_cnt[15:0] <= post_init_cnt[15:0] + 1'b1;
+    end
+
+    if((!tb_init_en) && init_seen && (post_init_cnt[15:0] < 16'd5000) &&
+       (mem_addr[24:4] < 5'd4)) begin
+      if((mem_addr[39:0] != last_mem_addr[39:0]) || mem_upd_any) begin
+        $display("[axi-memaddr] cycle=%0d post=%0d mem_addr=0x%h mem_loc=0x%h prev=0x%h state=%0d arvalid=%0d awvalid=%0d rvalid=%0d rready=%0d wvalid=%0d wready=%0d araddr=0x%h awaddr=0x%h arlen=%0d awlen=%0d read_step=%0d write_step=%0d wrap2=%0d wrap4_1=%0d wrap4_2=%0d wrap4_3=%0d upd_ar=%0d upd_aw=%0d upd_wrap4=%0d upd_wrap2=%0d upd_step=%0d",
+                 dbg_cycle, post_init_cnt[15:0], mem_addr[39:0],
+                 mem_addr[24:4], last_mem_addr[39:0], cur_state[1:0],
+                 arvalid_s0, awvalid_s0, rvalid, rready_s0, wvalid_s0,
+                 wready, araddr_s0[39:0],
+                 awaddr_s0[39:0], arlen_s0[7:0], awlen_s0[7:0],
+                 read_step[7:0], write_step[7:0], wrap2_1, wrap4_1, wrap4_2,
+                 wrap4_3, mem_upd_from_ar, mem_upd_from_aw, mem_upd_wrap4,
+                 mem_upd_wrap2, mem_upd_step);
+        last_mem_addr[39:0] <= mem_addr[39:0];
+      end
+    end else begin
+      last_mem_addr[39:0] <= mem_addr[39:0];
+    end
+
+    if(tb_init_en) begin
+      rd_dbg_cnt[7:0] <= 8'b0;
+    end else if(rvalid && rready_s0 && (rd_dbg_cnt[7:0] != 8'hff)) begin
+      rd_dbg_cnt[7:0] <= rd_dbg_cnt[7:0] + 1'b1;
+    end
+  end
+end
+
+always @ (posedge pll_core_cpuclk)
+begin
+  if(pad_cpu_rst_b) begin
+    if(((dbg_cycle >= 32'd2130) && (dbg_cycle <= 32'd2145)) ||
+       ((dbg_cycle >= 32'd2480) && (dbg_cycle <= 32'd2520))) begin
+      $display("[axi_slave128] cycle=%0d state=%0d arvalid=%0d arready=%0d awvalid=%0d awready=%0d rvalid=%0d rready=%0d read_step=%0d mem_cen=%0d mem_wen=0x%h mem_addr=0x%h araddr=0x%h rdata_lo=0x%h rdata_hi=0x%h",
+               dbg_cycle, cur_state[1:0], arvalid_s0, arready, awvalid_s0,
+               awready, rvalid, rready_s0, read_step[7:0], mem_cen,
+               mem_wen[15:0], mem_addr[39:0], araddr_s0[39:0],
+               mem_dout[63:0], mem_dout[127:64]);
+    end
+  end
+end
+
+always @ (posedge pll_core_cpuclk)
+begin
+  if(pad_cpu_rst_b) begin
+    if(init_seen && !tb_init_en && (rd_dbg_cnt[7:0] < 8'd16) &&
+       (mem_addr[24:4] < 5'd4) && rvalid && rready_s0) begin
+      $display("[axi-read] cycle=%0d cnt=%0d state=%0d araddr=0x%h mem_addr=0x%h rvalid=%0d rready=%0d rlast=%0d read_step=%0d rdata_lo=0x%h rdata_hi=0x%h mem_cen=%0d mem_wen=0x%h",
+               dbg_cycle, rd_dbg_cnt[7:0], cur_state[1:0], araddr_s0[39:0],
+               mem_addr[39:0], rvalid, rready_s0, rlast, read_step[7:0],
+               mem_dout[63:0], mem_dout[127:64], mem_cen, mem_wen[15:0]);
+    end
+  end
+end
+
 f_spsram_large x_f_spsram_large (
   .A                 (mem_addr[24:4]   ),
   .CEN               (mem_cen          ),
@@ -515,5 +609,3 @@ f_spsram_large x_f_spsram_large (
 );
 
 endmodule
-
-
