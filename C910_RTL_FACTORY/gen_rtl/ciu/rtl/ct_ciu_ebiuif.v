@@ -411,32 +411,6 @@ begin
     dbg_ebiuif_araddr_q <= 40'b0;
   end else begin
     dbg_ebiuif_cycle <= dbg_ebiuif_cycle + 1'b1;
-    if (dbg_ebiuif_cycle < 32'd20000) begin
-      if ((snb0_arvalid != dbg_snb0_arvalid_q) ||
-          (sab0_arbus[ADDR_H:ADDR_0] != dbg_snb0_araddr_q) ||
-          (snb1_arvalid != dbg_snb1_arvalid_q) ||
-          (sab1_arbus[ADDR_H:ADDR_0] != dbg_snb1_araddr_q) ||
-          (ebiu_rd_req != dbg_ebiu_rd_req_q) ||
-          (vb_ebiuif_addr_depd != dbg_vb_addr_depd_q) ||
-          (ebiuif_ebiu_arvalid != dbg_ebiuif_arvalid_q) ||
-          (ebiuif_ebiu_araddr != dbg_ebiuif_araddr_q)) begin
-        $display("[c910-ebiuif] cycle=%0d snb0_v %0d->%0d snb0_a=0x%0x snb1_v %0d->%0d snb1_a=0x%0x rd_req %0d->%0d depd %0d->%0d sel=%b arvalid %0d->%0d araddr=0x%0x",
-                 dbg_ebiuif_cycle,
-                 dbg_snb0_arvalid_q, snb0_arvalid, sab0_arbus[ADDR_H:ADDR_0],
-                 dbg_snb1_arvalid_q, snb1_arvalid, sab1_arbus[ADDR_H:ADDR_0],
-                 dbg_ebiu_rd_req_q, ebiu_rd_req,
-                 dbg_vb_addr_depd_q, vb_ebiuif_addr_depd,
-                 ebiu_ar_sel, dbg_ebiuif_arvalid_q, ebiuif_ebiu_arvalid,
-                 ebiuif_ebiu_araddr);
-      end
-      if ((dbg_ebiuif_cycle >= 32'd2480) && (dbg_ebiuif_cycle <= 32'd2520)) begin
-        $display("[c910-ebiuif] cycle=%0d win snb0_v=%0d snb0_a=0x%0x snb1_v=%0d snb1_a=0x%0x rd_req=%0d depd=%0d sel=%b arvalid=%0d araddr=0x%0x",
-                 dbg_ebiuif_cycle, snb0_arvalid, sab0_arbus[ADDR_H:ADDR_0],
-                 snb1_arvalid, sab1_arbus[ADDR_H:ADDR_0],
-                 ebiu_rd_req, vb_ebiuif_addr_depd, ebiu_ar_sel,
-                 ebiuif_ebiu_arvalid, ebiuif_ebiu_araddr);
-      end
-    end
     dbg_snb0_arvalid_q <= snb0_arvalid;
     dbg_snb0_araddr_q <= sab0_arbus[ADDR_H:ADDR_0];
     dbg_snb1_arvalid_q <= snb1_arvalid;

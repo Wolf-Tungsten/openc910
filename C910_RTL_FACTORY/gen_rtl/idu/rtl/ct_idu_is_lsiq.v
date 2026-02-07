@@ -1115,40 +1115,6 @@ begin
     dbg_lsiq_create0_store_q <= 1'b0;
   end else begin
     dbg_lsiq_cycle <= dbg_lsiq_cycle + 1'b1;
-    if (dbg_lsiq_cycle < 32'd20000) begin
-      if (lsiq_xx_pipe3_issue_en != dbg_lsiq_pipe3_issue_q) begin
-        $display("[c910-lsiq] cycle=%0d pipe3_issue %0d->%0d",
-                 dbg_lsiq_cycle, dbg_lsiq_pipe3_issue_q, lsiq_xx_pipe3_issue_en);
-      end
-      if (lsiq_xx_pipe4_issue_en != dbg_lsiq_pipe4_issue_q) begin
-        $display("[c910-lsiq] cycle=%0d pipe4_issue %0d->%0d",
-                 dbg_lsiq_cycle, dbg_lsiq_pipe4_issue_q, lsiq_xx_pipe4_issue_en);
-      end
-      if (lsiq_pipe3_bypass_en != dbg_lsiq_pipe3_bypass_q) begin
-        $display("[c910-lsiq] cycle=%0d pipe3_bypass %0d->%0d",
-                 dbg_lsiq_cycle, dbg_lsiq_pipe3_bypass_q, lsiq_pipe3_bypass_en);
-      end
-      if (lsiq_pipe4_bypass_en != dbg_lsiq_pipe4_bypass_q) begin
-        $display("[c910-lsiq] cycle=%0d pipe4_bypass %0d->%0d",
-                 dbg_lsiq_cycle, dbg_lsiq_pipe4_bypass_q, lsiq_pipe4_bypass_en);
-      end
-      if ((|lsiq_entry_vld[11:0]) != dbg_lsiq_entry_any_q) begin
-        $display("[c910-lsiq] cycle=%0d entry_any %0d->%0d",
-                 dbg_lsiq_cycle, dbg_lsiq_entry_any_q, (|lsiq_entry_vld[11:0]));
-      end
-      if ((|lsiq_entry_ready[11:0]) != dbg_lsiq_ready_any_q) begin
-        $display("[c910-lsiq] cycle=%0d ready_any %0d->%0d",
-                 dbg_lsiq_cycle, dbg_lsiq_ready_any_q, (|lsiq_entry_ready[11:0]));
-      end
-      if (dp_lsiq_create0_load != dbg_lsiq_create0_load_q) begin
-        $display("[c910-lsiq] cycle=%0d create0_load %0d->%0d",
-                 dbg_lsiq_cycle, dbg_lsiq_create0_load_q, dp_lsiq_create0_load);
-      end
-      if (dp_lsiq_create0_store != dbg_lsiq_create0_store_q) begin
-        $display("[c910-lsiq] cycle=%0d create0_store %0d->%0d",
-                 dbg_lsiq_cycle, dbg_lsiq_create0_store_q, dp_lsiq_create0_store);
-      end
-    end
     dbg_lsiq_pipe3_issue_q <= lsiq_xx_pipe3_issue_en;
     dbg_lsiq_pipe4_issue_q <= lsiq_xx_pipe4_issue_en;
     dbg_lsiq_pipe3_bypass_q <= lsiq_pipe3_bypass_en;

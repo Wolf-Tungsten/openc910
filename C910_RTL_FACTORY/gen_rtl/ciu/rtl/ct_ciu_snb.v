@@ -1009,30 +1009,6 @@ begin
     dbg_bmbif_bar_req_q <= 1'b0;
   end else begin
     dbg_snb_cycle <= dbg_snb_cycle + 1'b1;
-    if (dbg_snb_cycle < 32'd20000) begin
-      if ((snb_ebiuif_arvalid != dbg_snb_arvalid_q) ||
-          (snb_ebiuif_arbus[39:0] != dbg_snb_araddr_q) ||
-          (piu0_snb_ar_req != dbg_piu0_ar_req_q) ||
-          (piu1_snb_ar_req != dbg_piu1_ar_req_q) ||
-          (piu2_snb_ar_req != dbg_piu2_ar_req_q) ||
-          (piu3_snb_ar_req != dbg_piu3_ar_req_q) ||
-          (piu4_snb_ar_req != dbg_piu4_ar_req_q) ||
-          (bmbif_snb_bar_req != dbg_bmbif_bar_req_q)) begin
-        $display("[c910-snb] snb1=%0d cycle=%0d arvalid %0d->%0d araddr=0x%0x piu_req %0d%0d%0d%0d%0d bmbif_bar %0d->%0d",
-                 snb1, dbg_snb_cycle,
-                 dbg_snb_arvalid_q, snb_ebiuif_arvalid, snb_ebiuif_arbus[39:0],
-                 piu4_snb_ar_req, piu3_snb_ar_req, piu2_snb_ar_req,
-                 piu1_snb_ar_req, piu0_snb_ar_req,
-                 dbg_bmbif_bar_req_q, bmbif_snb_bar_req);
-      end
-      if ((dbg_snb_cycle >= 32'd2480) && (dbg_snb_cycle <= 32'd2520)) begin
-        $display("[c910-snb] snb1=%0d cycle=%0d win arvalid=%0d araddr=0x%0x piu_req=%0d%0d%0d%0d%0d bmbif_bar=%0d",
-                 snb1, dbg_snb_cycle, snb_ebiuif_arvalid, snb_ebiuif_arbus[39:0],
-                 piu4_snb_ar_req, piu3_snb_ar_req, piu2_snb_ar_req,
-                 piu1_snb_ar_req, piu0_snb_ar_req,
-                 bmbif_snb_bar_req);
-      end
-    end
     dbg_snb_arvalid_q <= snb_ebiuif_arvalid;
     dbg_snb_araddr_q <= snb_ebiuif_arbus[39:0];
     dbg_piu0_ar_req_q <= piu0_snb_ar_req;

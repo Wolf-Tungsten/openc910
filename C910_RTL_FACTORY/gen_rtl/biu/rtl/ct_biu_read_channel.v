@@ -760,47 +760,6 @@ begin
     dbg_buf_arvalid_q <= 1'b0;
   end else begin
     dbg_biu_rd_cycle <= dbg_biu_rd_cycle + 1'b1;
-    if (dbg_biu_rd_cycle < 32'd20000) begin
-      if (arvalid != dbg_arvalid_q) begin
-        $display("[c910-biu-rd] cycle=%0d arvalid %0d->%0d arvalid_gate=%0d",
-                 dbg_biu_rd_cycle, dbg_arvalid_q, arvalid, arvalid_gate);
-      end
-      if (cur_raddr_buf_arvalid != dbg_buf_arvalid_q) begin
-        $display("[c910-biu-rd] cycle=%0d buf_arvalid %0d->%0d",
-                 dbg_biu_rd_cycle, dbg_buf_arvalid_q, cur_raddr_buf_arvalid);
-      end
-      if (biu_pad_arvalid != dbg_pad_arvalid_q) begin
-        $display("[c910-biu-rd] cycle=%0d pad_arvalid %0d->%0d araddr=0x%0x arid=0x%0x arready=%0d",
-                 dbg_biu_rd_cycle, dbg_pad_arvalid_q, biu_pad_arvalid,
-                 cur_raddr_buf_araddr, cur_raddr_buf_arid, pad_biu_arready);
-      end
-      if (pad_biu_arready != dbg_pad_arready_q) begin
-        $display("[c910-biu-rd] cycle=%0d pad_arready %0d->%0d",
-                 dbg_biu_rd_cycle, dbg_pad_arready_q, pad_biu_arready);
-      end
-      if (pad_biu_rvalid != dbg_pad_rvalid_q) begin
-        $display("[c910-biu-rd] cycle=%0d pad_rvalid %0d->%0d rready=%0d",
-                 dbg_biu_rd_cycle, dbg_pad_rvalid_q, pad_biu_rvalid, biu_pad_rready);
-      end
-      if (cur_rdata_buf_rvalid != dbg_buf_rvalid_q) begin
-        $display("[c910-biu-rd] cycle=%0d buf_rvalid %0d->%0d rid=0x%0x rlast=%0d rack_full=%0d",
-                 dbg_biu_rd_cycle, dbg_buf_rvalid_q, cur_rdata_buf_rvalid,
-                 cur_rdata_buf_rid, cur_rdata_buf_rlast, rack_full);
-      end
-      if (cur_rdata_is_ifu != dbg_is_ifu_q) begin
-        $display("[c910-biu-rd] cycle=%0d cur_is_ifu %0d->%0d rid=0x%0x",
-                 dbg_biu_rd_cycle, dbg_is_ifu_q, cur_rdata_is_ifu, cur_rdata_buf_rid);
-      end
-      if (biu_ifu_rd_data_vld != dbg_ifu_vld_q) begin
-        $display("[c910-biu-rd] cycle=%0d ifu_data_vld %0d->%0d rid=0x%0x rack_full=%0d",
-                 dbg_biu_rd_cycle, dbg_ifu_vld_q, biu_ifu_rd_data_vld,
-                 cur_rdata_buf_rid, rack_full);
-      end
-      if (rack_full != dbg_rack_full_q) begin
-        $display("[c910-biu-rd] cycle=%0d rack_full %0d->%0d rack_valid=%0d rack_pending=%0d",
-                 dbg_biu_rd_cycle, dbg_rack_full_q, rack_full, rack_valid, rack_pending);
-      end
-    end
     dbg_pad_rvalid_q <= pad_biu_rvalid;
     dbg_buf_rvalid_q <= cur_rdata_buf_rvalid;
     dbg_is_ifu_q <= cur_rdata_is_ifu;

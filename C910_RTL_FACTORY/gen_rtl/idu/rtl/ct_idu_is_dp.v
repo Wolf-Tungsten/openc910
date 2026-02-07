@@ -6349,40 +6349,6 @@ begin
     dbg_is_dp_lsiq_create1_store_q <= 1'b0;
   end else begin
     dbg_is_dp_cycle <= dbg_is_dp_cycle + 1'b1;
-    if (dbg_is_dp_cycle < 32'd20000) begin
-      if (ctrl_dp_is_dis_lsiq_create0_sel != dbg_is_dp_lsiq_sel0_q) begin
-        $display("[c910-is-dp] cycle=%0d lsiq_sel0 %0d->%0d",
-                 dbg_is_dp_cycle, dbg_is_dp_lsiq_sel0_q, ctrl_dp_is_dis_lsiq_create0_sel);
-      end
-      if (ctrl_dp_is_dis_lsiq_create1_sel != dbg_is_dp_lsiq_sel1_q) begin
-        $display("[c910-is-dp] cycle=%0d lsiq_sel1 %0d->%0d",
-                 dbg_is_dp_cycle, dbg_is_dp_lsiq_sel1_q, ctrl_dp_is_dis_lsiq_create1_sel);
-      end
-      if (ctrl_lsiq_create0_dp_en != dbg_is_dp_lsiq_dp_en0_q) begin
-        $display("[c910-is-dp] cycle=%0d lsiq_dp_en0 %0d->%0d",
-                 dbg_is_dp_cycle, dbg_is_dp_lsiq_dp_en0_q, ctrl_lsiq_create0_dp_en);
-      end
-      if (ctrl_lsiq_create1_dp_en != dbg_is_dp_lsiq_dp_en1_q) begin
-        $display("[c910-is-dp] cycle=%0d lsiq_dp_en1 %0d->%0d",
-                 dbg_is_dp_cycle, dbg_is_dp_lsiq_dp_en1_q, ctrl_lsiq_create1_dp_en);
-      end
-      if (dp_lsiq_create0_load != dbg_is_dp_lsiq_create0_load_q) begin
-        $display("[c910-is-dp] cycle=%0d create0_load %0d->%0d",
-                 dbg_is_dp_cycle, dbg_is_dp_lsiq_create0_load_q, dp_lsiq_create0_load);
-      end
-      if (dp_lsiq_create0_store != dbg_is_dp_lsiq_create0_store_q) begin
-        $display("[c910-is-dp] cycle=%0d create0_store %0d->%0d",
-                 dbg_is_dp_cycle, dbg_is_dp_lsiq_create0_store_q, dp_lsiq_create0_store);
-      end
-      if (dp_lsiq_create1_load != dbg_is_dp_lsiq_create1_load_q) begin
-        $display("[c910-is-dp] cycle=%0d create1_load %0d->%0d",
-                 dbg_is_dp_cycle, dbg_is_dp_lsiq_create1_load_q, dp_lsiq_create1_load);
-      end
-      if (dp_lsiq_create1_store != dbg_is_dp_lsiq_create1_store_q) begin
-        $display("[c910-is-dp] cycle=%0d create1_store %0d->%0d",
-                 dbg_is_dp_cycle, dbg_is_dp_lsiq_create1_store_q, dp_lsiq_create1_store);
-      end
-    end
     dbg_is_dp_lsiq_sel0_q <= ctrl_dp_is_dis_lsiq_create0_sel;
     dbg_is_dp_lsiq_sel1_q <= ctrl_dp_is_dis_lsiq_create1_sel;
     dbg_is_dp_lsiq_dp_en0_q <= ctrl_lsiq_create0_dp_en;

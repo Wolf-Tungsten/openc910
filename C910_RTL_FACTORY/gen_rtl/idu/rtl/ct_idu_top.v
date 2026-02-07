@@ -1597,36 +1597,6 @@ begin
     dbg_idu_pipe4_type_q <= 2'b0;
   end else begin
     dbg_idu_cycle <= dbg_idu_cycle + 1'b1;
-    if (dbg_idu_cycle < 32'd20000) begin
-      if (idu_lsu_rf_pipe3_sel != dbg_idu_pipe3_sel_q) begin
-        $display("[c910-idu] cycle=%0d pipe3_sel %0d->%0d",
-                 dbg_idu_cycle, dbg_idu_pipe3_sel_q, idu_lsu_rf_pipe3_sel);
-      end
-      if (idu_lsu_rf_pipe4_sel != dbg_idu_pipe4_sel_q) begin
-        $display("[c910-idu] cycle=%0d pipe4_sel %0d->%0d",
-                 dbg_idu_cycle, dbg_idu_pipe4_sel_q, idu_lsu_rf_pipe4_sel);
-      end
-      if (idu_lsu_rf_pipe3_inst_ldr != dbg_idu_pipe3_ldr_q) begin
-        $display("[c910-idu] cycle=%0d pipe3_ldr %0d->%0d",
-                 dbg_idu_cycle, dbg_idu_pipe3_ldr_q,
-                 idu_lsu_rf_pipe3_inst_ldr);
-      end
-      if (idu_lsu_rf_pipe4_inst_str != dbg_idu_pipe4_str_q) begin
-        $display("[c910-idu] cycle=%0d pipe4_str %0d->%0d",
-                 dbg_idu_cycle, dbg_idu_pipe4_str_q,
-                 idu_lsu_rf_pipe4_inst_str);
-      end
-      if (idu_lsu_rf_pipe3_inst_type != dbg_idu_pipe3_type_q) begin
-        $display("[c910-idu] cycle=%0d pipe3_type 0x%0h->0x%0h",
-                 dbg_idu_cycle, dbg_idu_pipe3_type_q,
-                 idu_lsu_rf_pipe3_inst_type);
-      end
-      if (idu_lsu_rf_pipe4_inst_type != dbg_idu_pipe4_type_q) begin
-        $display("[c910-idu] cycle=%0d pipe4_type 0x%0h->0x%0h",
-                 dbg_idu_cycle, dbg_idu_pipe4_type_q,
-                 idu_lsu_rf_pipe4_inst_type);
-      end
-    end
     dbg_idu_pipe3_sel_q <= idu_lsu_rf_pipe3_sel;
     dbg_idu_pipe4_sel_q <= idu_lsu_rf_pipe4_sel;
     dbg_idu_pipe3_ldr_q <= idu_lsu_rf_pipe3_inst_ldr;

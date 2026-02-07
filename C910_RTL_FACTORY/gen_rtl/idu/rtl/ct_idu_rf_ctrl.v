@@ -1344,40 +1344,6 @@ begin
     dbg_ctrl_pipe4_lch_fail_q <= 1'b0;
   end else begin
     dbg_rf_cycle <= dbg_rf_cycle + 1'b1;
-    if (dbg_rf_cycle < 32'd20000) begin
-      if (lsiq_xx_pipe3_issue_en != dbg_lsiq_pipe3_issue_q) begin
-        $display("[c910-rf-ctrl] cycle=%0d lsiq_pipe3_issue %0d->%0d",
-                 dbg_rf_cycle, dbg_lsiq_pipe3_issue_q, lsiq_xx_pipe3_issue_en);
-      end
-      if (lsiq_xx_pipe4_issue_en != dbg_lsiq_pipe4_issue_q) begin
-        $display("[c910-rf-ctrl] cycle=%0d lsiq_pipe4_issue %0d->%0d",
-                 dbg_rf_cycle, dbg_lsiq_pipe4_issue_q, lsiq_xx_pipe4_issue_en);
-      end
-      if (ctrl_rf_pipe3_inst_vld != dbg_rf_pipe3_inst_vld_q) begin
-        $display("[c910-rf-ctrl] cycle=%0d pipe3_inst_vld %0d->%0d",
-                 dbg_rf_cycle, dbg_rf_pipe3_inst_vld_q, ctrl_rf_pipe3_inst_vld);
-      end
-      if (ctrl_rf_pipe4_inst_vld != dbg_rf_pipe4_inst_vld_q) begin
-        $display("[c910-rf-ctrl] cycle=%0d pipe4_inst_vld %0d->%0d",
-                 dbg_rf_cycle, dbg_rf_pipe4_inst_vld_q, ctrl_rf_pipe4_inst_vld);
-      end
-      if (ctrl_rf_pipe3_pipedown_vld != dbg_ctrl_pipe3_pipedown_q) begin
-        $display("[c910-rf-ctrl] cycle=%0d pipe3_pipedown %0d->%0d",
-                 dbg_rf_cycle, dbg_ctrl_pipe3_pipedown_q, ctrl_rf_pipe3_pipedown_vld);
-      end
-      if (ctrl_rf_pipe4_pipedown_vld != dbg_ctrl_pipe4_pipedown_q) begin
-        $display("[c910-rf-ctrl] cycle=%0d pipe4_pipedown %0d->%0d",
-                 dbg_rf_cycle, dbg_ctrl_pipe4_pipedown_q, ctrl_rf_pipe4_pipedown_vld);
-      end
-      if (ctrl_rf_pipe3_lch_fail != dbg_ctrl_pipe3_lch_fail_q) begin
-        $display("[c910-rf-ctrl] cycle=%0d pipe3_lch_fail %0d->%0d",
-                 dbg_rf_cycle, dbg_ctrl_pipe3_lch_fail_q, ctrl_rf_pipe3_lch_fail);
-      end
-      if (ctrl_rf_pipe4_lch_fail != dbg_ctrl_pipe4_lch_fail_q) begin
-        $display("[c910-rf-ctrl] cycle=%0d pipe4_lch_fail %0d->%0d",
-                 dbg_rf_cycle, dbg_ctrl_pipe4_lch_fail_q, ctrl_rf_pipe4_lch_fail);
-      end
-    end
     dbg_lsiq_pipe3_issue_q <= lsiq_xx_pipe3_issue_en;
     dbg_lsiq_pipe4_issue_q <= lsiq_xx_pipe4_issue_en;
     dbg_rf_pipe3_inst_vld_q <= ctrl_rf_pipe3_inst_vld;

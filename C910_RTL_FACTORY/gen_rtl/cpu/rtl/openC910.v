@@ -1887,19 +1887,6 @@ begin
     dbg_open_arready_q <= 1'b0;
   end else begin
     dbg_open_cycle <= dbg_open_cycle + 1'b1;
-    if (dbg_open_cycle < 32'd20000) begin
-      if ((biu_pad_arvalid != dbg_open_arvalid_q) ||
-          (biu_pad_araddr != dbg_open_araddr_q) ||
-          (pad_biu_arready != dbg_open_arready_q)) begin
-        $display("[c910-open] cycle=%0d arvalid %0d->%0d araddr=0x%0x arready %0d->%0d",
-                 dbg_open_cycle, dbg_open_arvalid_q, biu_pad_arvalid,
-                 biu_pad_araddr, dbg_open_arready_q, pad_biu_arready);
-      end
-      if ((dbg_open_cycle >= 32'd2480) && (dbg_open_cycle <= 32'd2520)) begin
-        $display("[c910-open] cycle=%0d win arvalid=%0d araddr=0x%0x arready=%0d",
-                 dbg_open_cycle, biu_pad_arvalid, biu_pad_araddr, pad_biu_arready);
-      end
-    end
     dbg_open_arvalid_q <= biu_pad_arvalid;
     dbg_open_araddr_q <= biu_pad_araddr;
     dbg_open_arready_q <= pad_biu_arready;
