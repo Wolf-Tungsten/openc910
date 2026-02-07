@@ -7,9 +7,14 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <cstring>
 
 #include "verilated.h"
 #include "verilated_cov.h"
+
+#if VM_TRACE_FST
+#include "verilated_fst_c.h"
+#endif
 
 #include "Vsim_top.h"
 
@@ -19,6 +24,41 @@ constexpr uint32_t kClkPeriod = 10;
 constexpr uint32_t kTclkPeriod = 40;
 constexpr uint32_t kMaxRunTime = 0x3000000;
 constexpr uint32_t kLastCycle = 50000;
+
+// Configuration from environment variables
+// Returns 0 for unlimited simulation (run to completion)
+uint32_t GetMaxSimCycles()
+{
+    const char* env = std::getenv("C910_SIM_MAX_CYCLE");
+    if (env != nullptr && env[0] != '\0')
+    {
+        try
+        {
+            return static_cast<uint32_t>(std::stoul(env));
+        }
+        catch (const std::exception&)
+        {
+            // Use default
+        }
+    }
+    return 5000;  // Default 5000 cycles
+}
+
+bool IsWaveformEnabled()
+{
+    const char* env = std::getenv("C910_WAVEFORM");
+    return env != nullptr && std::strcmp(env, "1") == 0;
+}
+
+const char* GetWaveformPath()
+{
+    const char* env = std::getenv("C910_WAVEFORM_PATH");
+    if (env != nullptr && env[0] != '\0')
+    {
+        return env;
+    }
+    return "waveform.fst";
+}
 constexpr uint32_t kMemClearLines = 0x16384;
 constexpr uint32_t kInstLines = 0x4000;
 constexpr uint32_t kDataLines = 0x4000;
@@ -116,12 +156,44 @@ void WriteReport(const char *text)
 
 int main(int argc, char **argv)
 {
+    // Parse configuration from environment
+    const uint32_t max_sim_cycles = GetMaxSimCycles();
+    const bool enable_waveform = IsWaveformEnabled();
+    const char* waveform_path = GetWaveformPath();
+
+    std::cout << "[TB] C910 Simulation Started" << std::endl;
+    if (max_sim_cycles == 0)
+    {
+        std::cout << "[TB] Max simulation cycles: unlimited (run to completion)" << std::endl;
+    }
+    else
+    {
+        std::cout << "[TB] Max simulation cycles: " << max_sim_cycles << std::endl;
+    }
+    std::cout << "[TB] Waveform enabled: " << (enable_waveform ? "yes" : "no") << std::endl;
+
     Verilated::commandArgs(argc, argv);
     auto context = std::make_unique<VerilatedContext>();
-    context->traceEverOn(false);
+    context->traceEverOn(enable_waveform);
     context->commandArgs(argc, argv);
 
     auto dut = std::make_unique<Vsim_top>(context.get());
+
+#if VM_TRACE_FST
+    std::unique_ptr<VerilatedFstC> trace_fst;
+    if (enable_waveform)
+    {
+        trace_fst = std::make_unique<VerilatedFstC>();
+        dut->trace(trace_fst.get(), 99);  // Trace 99 levels of hierarchy
+        trace_fst->open(waveform_path);
+        std::cout << "[TB] FST waveform will be saved to: " << waveform_path << std::endl;
+    }
+#else
+    if (enable_waveform)
+    {
+        std::cerr << "[TB] Warning: Waveform requested but VM_TRACE_FST is not enabled at compile time" << std::endl;
+    }
+#endif
 
     dut->clk = 0;
     dut->jclk = 0;
@@ -141,10 +213,16 @@ int main(int argc, char **argv)
     auto tick_raw = [&]() {
         dut->clk = 0;
         dut->eval();
+#if VM_TRACE_FST
+        if (trace_fst) trace_fst->dump(context->time());
+#endif
         context->timeInc(1);
 
         dut->clk = 1;
         dut->eval();
+#if VM_TRACE_FST
+        if (trace_fst) trace_fst->dump(context->time());
+#endif
         context->timeInc(1);
     };
 
@@ -311,7 +389,8 @@ int main(int argc, char **argv)
     dut->jclk = 0;
 
     const int jclk_threshold = (kTclkPeriod / kClkPeriod / 2) - 1;
-    while (!context->gotFinish())
+    bool cycle_limit_reached = false;
+    while (!context->gotFinish() && !cycle_limit_reached)
     {
         tick_raw();
 
@@ -323,6 +402,16 @@ int main(int argc, char **argv)
             std::cout << "**********************************************" << std::endl;
             WriteReport("TEST FAIL");
             break;
+        }
+
+        // Check cycle limit (0 means unlimited)
+        if (max_sim_cycles > 0 && cycle_count >= max_sim_cycles)
+        {
+            std::cout << "**********************************************" << std::endl;
+            std::cout << "*   meeting max simulation cycle limit!      *" << std::endl;
+            std::cout << "*   C910_SIM_MAX_CYCLE = " << max_sim_cycles << std::endl;
+            std::cout << "**********************************************" << std::endl;
+            cycle_limit_reached = true;
         }
 
         if (!dut->rst_b)
@@ -738,6 +827,14 @@ int main(int argc, char **argv)
     }
 
     dut->final();
+
+#if VM_TRACE_FST
+    if (trace_fst)
+    {
+        trace_fst->close();
+        std::cout << "[TB] FST waveform saved to: " << waveform_path << std::endl;
+    }
+#endif
 
 #if VM_COVERAGE
     const char *cov_path = std::getenv("VERILATOR_COV_FILE");

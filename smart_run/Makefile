@@ -45,7 +45,16 @@ VERILATOR_FLAGS += -O3 -x-assign 0
 VERILATOR_FLAGS += -lint-only
 # Warn abount lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wno-fatal
-# Make waveforms
+# Waveform control: C910_WAVEFORM=1 to enable FST tracing
+C910_WAVEFORM ?= 0
+C910_SIM_MAX_CYCLE ?= 5000
+
+# Verilator compile flags based on waveform setting
+ifeq ($(C910_WAVEFORM),1)
+VERILATOR_TRACE_FLAGS += --trace-fst
+endif
+
+# Make waveforms (VCD format - deprecated, use FST via C910_WAVEFORM=1)
 #VERILATOR_FLAGS += --trace
 ## Check SystemVerilog assertions
 #VERILATOR_FLAGS += --assert
@@ -62,11 +71,9 @@ VERILATOR_FLAGS += -cc --exe --no-timing
 #VERILATOR_FLAGS += -MMD
 # Optimize
 VERILATOR_FLAGS += -O3 -x-assign 0
-# lint-only
-VERILATOR_FLAGS += -lint-only
-# Warn abount lint issues; may not want this on less solid designs
+# Warn about lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wno-fatal
-# Make waveforms
+# Make waveforms (VCD format - deprecated, use FST via C910_WAVEFORM=1)
 #VERILATOR_FLAGS += --trace
 ## Check SystemVerilog assertions
 #VERILATOR_FLAGS += --assert
@@ -151,10 +158,10 @@ else
         else
         ifeq ($(SIM), verilator)
 	      @make -s wolf_emit
-	      @cd $(WORK_DIR) && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(SIM_FILELIST) $(SIM_DUMP)
+	      @cd $(WORK_DIR) && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
             else
             ifeq ($(SIM), verilator_ref)
-	      @cd $(WORK_DIR) && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(SIM_FILELIST) $(SIM_DUMP)
+	      @cd $(WORK_DIR) && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
             else
 	      @echo "  [THead-smart] Please specify SIM = vcs to use VCS, or SIM = nc ,or SIM = verilator or SIM = verilator_ref to use Verilator ..."
             endif
@@ -215,7 +222,7 @@ cleancase:
 ################################################################################
 # Execute one case
 runVerilator:
-	@cd $(WORK_DIR) && obj_dir/Vsim_top
+	@cd $(WORK_DIR) && C910_SIM_MAX_CYCLE=$(C910_SIM_MAX_CYCLE) C910_WAVEFORM=$(C910_WAVEFORM) obj_dir/Vsim_top
 
 runcase:
 	@make cleanVerilator
@@ -236,7 +243,7 @@ else
         else
             ifneq (,$(filter $(SIM),verilator verilator_ref))
 		make buildVerilator
-		cd $(WORK_DIR) && obj_dir/Vsim_top	
+		cd $(WORK_DIR) && C910_SIM_MAX_CYCLE=$(C910_SIM_MAX_CYCLE) C910_WAVEFORM=$(C910_WAVEFORM) C910_WAVEFORM_PATH=$(C910_WAVEFORM_PATH) obj_dir/Vsim_top
             else
 	        cd $(WORK_DIR) && vvp xuantie_core.vvp 
             endif
@@ -291,12 +298,16 @@ help:
 	@echo "    SIM=                            : options: vcs / nc / verilator / verilator_ref(use version 4.215 or newer)"; 
 	@echo "    CASE=                           : options: the list print by 'make showcase'"; 
 	@echo "    DUMP=                           : options: on / off";
+	@echo "    C910_SIM_MAX_CYCLE=             : max simulation cycles, 0=unlimited (default: 5000)";
+	@echo "    C910_WAVEFORM=                  : enable FST waveform dump, options: 1 / 0 (default: 0)";
+	@echo "    C910_WAVEFORM_PATH=             : path to save FST waveform (default: waveform.fst)";
 	@echo "  Examples:";
 	@echo "    make runcase CASE=dhry          : run case 'dhry' (by iverilog withtout dump) "; 
 	@echo "    make runcase CASE=dhry SIM=nc   : run case 'dhry' (by nc withtout dump) "; 
 	@echo "    make runcase CASE=dhry DUMP=on  : run case 'dhry' with dump "; 
 	@echo "    make runcase CASE=coremark SIM=verilator THREADS=8  : run case 'coremark' without dump (by verilator) with 8 threads";
 	@echo "    make runcase CASE=coremark SIM=verilator_ref THREADS=8 : run case 'coremark' without wolf-sv-parser (verilator RTL reference)";
+	@echo "    make runcase CASE=coremark SIM=verilator C910_WAVEFORM=1 C910_SIM_MAX_CYCLE=10000 : run with FST waveform and 10000 cycle limit";
 	@echo "    make cleanVerilator                          : clean the verilator generated file before Verilator operations";
 	@echo "    make compile SIM=verilator DUMP=on THREADS=8 : run compile with dump (by Verilator with dump) with 8 threads";
 	@echo "    make buildVerilator                          : run build executable file with Verilator";
