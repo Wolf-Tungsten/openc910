@@ -25,6 +25,7 @@ SIM = iverilog
 DUMP = off
 THREADS = 4
 SMART_RUN_DIR := $(CURDIR)
+VERILATOR ?= $(or $(shell echo $$VERILATOR),verilator)
 WOLF_SV_PARSER ?= $(abspath $(CURDIR)/../../../../build/bin/wolf-sv-parser)
 WOLF_TOP ?= sim_top
 WORK_DIR ?= $(CURDIR)/work
@@ -158,10 +159,10 @@ else
         else
         ifeq ($(SIM), verilator)
 	      @make -s wolf_emit
-	      @cd $(WORK_DIR) && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
+	      @cd $(WORK_DIR) && $(VERILATOR) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
             else
             ifeq ($(SIM), verilator_ref)
-	      @cd $(WORK_DIR) && verilator $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
+	      @cd $(WORK_DIR) && $(VERILATOR) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
             else
 	      @echo "  [THead-smart] Please specify SIM = vcs to use VCS, or SIM = nc ,or SIM = verilator or SIM = verilator_ref to use Verilator ..."
             endif

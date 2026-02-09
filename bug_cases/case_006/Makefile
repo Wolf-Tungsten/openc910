@@ -10,7 +10,7 @@ OUT := $(WOLF_DIR)/wolf_emit.sv
 
 DUT_TOP := axi2ahb
 TB_SRC := $(CURDIR)/tb_case_006.cpp
-VERILATOR ?= verilator
+VERILATOR ?= $(or $(shell echo $$VERILATOR),verilator)
 VERILATOR_COVERAGE ?= verilator_coverage
 COV_MIN ?= 90
 COVERAGE_FLAGS = $(if $(filter 1,$(COVERAGE)),--coverage,)

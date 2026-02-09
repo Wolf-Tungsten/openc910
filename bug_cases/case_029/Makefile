@@ -10,7 +10,7 @@ OUT := $(WOLF_DIR)/wolf_emit.sv
 
 cpu_sub_system_axi := cpu_sub_system_axi
 TB_SRC := $(CURDIR)/tb_case_029.cpp
-VERILATOR ?= verilator
+VERILATOR ?= $(or $(shell echo $$VERILATOR),verilator)
 VERILATOR_COVERAGE ?= verilator_coverage
 COV_MIN ?= 35
 COVERAGE_FLAGS = $(if $(filter 1,$(COVERAGE)),--coverage,)
