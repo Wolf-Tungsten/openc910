@@ -33,6 +33,15 @@ WOLF_EMIT_DIR ?= $(WORK_DIR)/wolf_emit
 WOLF_EMITTED_SV ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.sv
 WOLF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
 WOLF_EMIT_FLAGS ?= --emit-sv --top $(WOLF_TOP)
+WOLF_LOG ?= warn
+WOLF_TIMER ?= 0
+
+ifneq ($(strip $(WOLF_LOG)),)
+WOLF_EMIT_FLAGS += --log $(WOLF_LOG)
+endif
+ifneq ($(strip $(WOLF_TIMER)),0)
+WOLF_EMIT_FLAGS += --profile-timer
+endif
 VERILATOR_REF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
 VERILATOR_REF_CPP ?= $(SMART_RUN_DIR)/logical/tb/tb_c910.cpp
 
