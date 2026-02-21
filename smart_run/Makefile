@@ -26,7 +26,7 @@ DUMP = off
 THREADS = 4
 SMART_RUN_DIR := $(CURDIR)
 VERILATOR ?= $(or $(shell echo $$VERILATOR),verilator)
-WOLF_SV_PARSER ?= $(abspath $(CURDIR)/../../../../build/bin/wolf-sv-parser)
+WOLF_SV_PARSER ?= $(abspath $(CURDIR)/../../../../build/bin/wolvrix-cli)
 WOLF_TOP ?= sim_top
 WORK_DIR ?= $(CURDIR)/work
 WOLF_EMIT_DIR ?= $(WORK_DIR)/wolf_emit
@@ -182,8 +182,8 @@ endif
 
 wolf_emit:
 	@if [ ! -x "$(WOLF_SV_PARSER)" ]; then \
-		echo "  [THead-smart] wolf-sv-parser not found: $(WOLF_SV_PARSER)"; \
-		echo "  [THead-smart] Build it from repo root: cmake -S . -B build && cmake --build build --target wolf-sv-parser"; \
+		echo "  [THead-smart] wolvrix-cli not found: $(WOLF_SV_PARSER)"; \
+		echo "  [THead-smart] Build it from repo root: cmake -S . -B build && cmake --build build --target wolvrix-cli"; \
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_EMIT_DIR)
@@ -316,7 +316,7 @@ help:
 	@echo "    make runcase CASE=dhry SIM=nc   : run case 'dhry' (by nc withtout dump) "; 
 	@echo "    make runcase CASE=dhry DUMP=on  : run case 'dhry' with dump "; 
 	@echo "    make runcase CASE=coremark SIM=verilator THREADS=8  : run case 'coremark' without dump (by verilator) with 8 threads";
-	@echo "    make runcase CASE=coremark SIM=verilator_ref THREADS=8 : run case 'coremark' without wolf-sv-parser (verilator RTL reference)";
+	@echo "    make runcase CASE=coremark SIM=verilator_ref THREADS=8 : run case 'coremark' without wolvrix-cli (verilator RTL reference)";
 	@echo "    make runcase CASE=coremark SIM=verilator C910_WAVEFORM=1 C910_SIM_MAX_CYCLE=10000 : run with FST waveform and 10000 cycle limit";
 	@echo "    make cleanVerilator                          : clean the verilator generated file before Verilator operations";
 	@echo "    make compile SIM=verilator DUMP=on THREADS=8 : run compile with dump (by Verilator with dump) with 8 threads";

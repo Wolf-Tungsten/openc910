@@ -1,9 +1,0 @@
-../../../openc910/C910_RTL_FACTORY/gen_rtl/clk/rtl/gated_clk_cell.v
-../../../openc910/C910_RTL_FACTORY/gen_rtl/fpga/rtl/fpga_ram.v
-../../../openc910/C910_RTL_FACTORY/gen_rtl/fpga/rtl/ct_f_spsram_1024x64.v
-../../../openc910/C910_RTL_FACTORY/gen_rtl/fpga/rtl/ct_f_spsram_128x16.v
-../../../openc910/C910_RTL_FACTORY/gen_rtl/ifu/rtl/ct_spsram_1024x64.v
-../../../openc910/C910_RTL_FACTORY/gen_rtl/ifu/rtl/ct_spsram_128x16.v
-../../../openc910/C910_RTL_FACTORY/gen_rtl/ifu/rtl/ct_ifu_bht_pre_array.v
-../../../openc910/C910_RTL_FACTORY/gen_rtl/ifu/rtl/ct_ifu_bht_sel_array.v
-../../../openc910/C910_RTL_FACTORY/gen_rtl/ifu/rtl/ct_ifu_bht.v
