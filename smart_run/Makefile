@@ -31,16 +31,24 @@ WOLF_TOP ?= sim_top
 WORK_DIR ?= $(CURDIR)/work
 WOLF_EMIT_DIR ?= $(WORK_DIR)/wolf_emit
 WOLF_EMITTED_SV ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.sv
+WOLF_JSON ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.json
 WOLF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
 WOLF_EMIT_FLAGS ?= --emit-sv --top $(WOLF_TOP)
+WOLF_JSON_EMIT_FLAGS ?= --store-json --top $(WOLF_TOP)
+WOLF_JSON_LOAD_FLAGS ?= --emit-sv --top $(WOLF_TOP) --skip-transform
+WOLF_JSON_ROUNDTRIP ?= 0
 WOLF_LOG ?= warn
 WOLF_TIMER ?= 0
 
 ifneq ($(strip $(WOLF_LOG)),)
 WOLF_EMIT_FLAGS += --log $(WOLF_LOG)
+WOLF_JSON_EMIT_FLAGS += --log $(WOLF_LOG)
+WOLF_JSON_LOAD_FLAGS += --log $(WOLF_LOG)
 endif
 ifneq ($(strip $(WOLF_TIMER)),0)
 WOLF_EMIT_FLAGS += --profile-timer
+WOLF_JSON_EMIT_FLAGS += --profile-timer
+WOLF_JSON_LOAD_FLAGS += --profile-timer
 endif
 VERILATOR_REF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
 VERILATOR_REF_CPP ?= $(SMART_RUN_DIR)/logical/tb/tb_c910.cpp
@@ -187,7 +195,12 @@ wolf_emit:
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_EMIT_DIR)
-	@cd $(WORK_DIR) && $(WOLF_SV_PARSER) $(WOLF_EMIT_FLAGS) -o $(WOLF_EMITTED_SV) $(WOLF_FILELIST)
+	@if [ "$(WOLF_JSON_ROUNDTRIP)" = "1" ]; then \
+		cd $(WORK_DIR) && $(WOLF_SV_PARSER) $(WOLF_JSON_EMIT_FLAGS) -o $(WOLF_JSON) $(WOLF_FILELIST); \
+		cd $(WORK_DIR) && $(WOLF_SV_PARSER) --load-json $(WOLF_JSON) $(WOLF_JSON_LOAD_FLAGS) -o $(WOLF_EMITTED_SV); \
+	else \
+		cd $(WORK_DIR) && $(WOLF_SV_PARSER) $(WOLF_EMIT_FLAGS) -o $(WOLF_EMITTED_SV) $(WOLF_FILELIST); \
+	fi
 
 buildVerilator:
 	@mkdir -p $(CCACHE_DIR)
