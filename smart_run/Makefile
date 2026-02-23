@@ -26,30 +26,18 @@ DUMP = off
 THREADS = 4
 SMART_RUN_DIR := $(CURDIR)
 VERILATOR ?= $(or $(shell echo $$VERILATOR),verilator)
-WOLF_SV_PARSER ?= $(abspath $(CURDIR)/../../../../build/bin/wolvrix-cli)
-WOLF_TOP ?= sim_top
+WOLVRIX_BIN ?= $(abspath $(CURDIR)/../../../../build/bin/wolvrix)
+WOLVRIX_TCL ?= $(abspath $(SMART_RUN_DIR)/wolvrix.tcl)
+REPO_ROOT ?= $(abspath $(SMART_RUN_DIR)/../../../..)
+WOLVRIX_BUILD_DIR ?= $(if $(BUILD_DIR),$(abspath $(if $(filter /%,$(BUILD_DIR)),$(BUILD_DIR),$(REPO_ROOT)/$(BUILD_DIR))),$(REPO_ROOT)/build)
+WOLF_TOP := sim_top
 WORK_DIR ?= $(CURDIR)/work
-WOLF_EMIT_DIR ?= $(WORK_DIR)/wolf_emit
+WOLF_EMIT_DIR ?= $(WOLVRIX_BUILD_DIR)/c910/wolf_emit
 WOLF_EMITTED_SV ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.sv
-WOLF_JSON ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.json
-WOLF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
-WOLF_EMIT_FLAGS ?= --emit-sv --top $(WOLF_TOP)
-WOLF_JSON_EMIT_FLAGS ?= --store-json --top $(WOLF_TOP)
-WOLF_JSON_LOAD_FLAGS ?= --emit-sv --top $(WOLF_TOP) --skip-transform
 WOLF_JSON_ROUNDTRIP ?= 0
 WOLF_LOG ?= warn
 WOLF_TIMER ?= 0
-
-ifneq ($(strip $(WOLF_LOG)),)
-WOLF_EMIT_FLAGS += --log $(WOLF_LOG)
-WOLF_JSON_EMIT_FLAGS += --log $(WOLF_LOG)
-WOLF_JSON_LOAD_FLAGS += --log $(WOLF_LOG)
-endif
-ifneq ($(strip $(WOLF_TIMER)),0)
-WOLF_EMIT_FLAGS += --profile-timer
-WOLF_JSON_EMIT_FLAGS += --profile-timer
-WOLF_JSON_LOAD_FLAGS += --profile-timer
-endif
+# WOLF_LOG / WOLF_TIMER are currently unused by wolvrix.tcl
 VERILATOR_REF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
 VERILATOR_REF_CPP ?= $(SMART_RUN_DIR)/logical/tb/tb_c910.cpp
 
@@ -176,9 +164,11 @@ else
         else
         ifeq ($(SIM), verilator)
 	      @make -s wolf_emit
+	      @echo "  [THead-smart] verilator start (compile)"
 	      @cd $(WORK_DIR) && $(VERILATOR) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
             else
             ifeq ($(SIM), verilator_ref)
+	      @echo "  [THead-smart] verilator start (compile)"
 	      @cd $(WORK_DIR) && $(VERILATOR) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
             else
 	      @echo "  [THead-smart] Please specify SIM = vcs to use VCS, or SIM = nc ,or SIM = verilator or SIM = verilator_ref to use Verilator ..."
@@ -189,21 +179,22 @@ else
 endif 
 
 wolf_emit:
-	@if [ ! -x "$(WOLF_SV_PARSER)" ]; then \
-		echo "  [THead-smart] wolvrix-cli not found: $(WOLF_SV_PARSER)"; \
-		echo "  [THead-smart] Build it from repo root: cmake -S . -B build && cmake --build build --target wolvrix-cli"; \
+	@if [ ! -x "$(WOLVRIX_BIN)" ]; then \
+		echo "  [THead-smart] wolvrix not found: $(WOLVRIX_BIN)"; \
+		echo "  [THead-smart] Build it from repo root: cmake -S . -B build && cmake --build build --target wolvrix"; \
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_EMIT_DIR)
-	@if [ "$(WOLF_JSON_ROUNDTRIP)" = "1" ]; then \
-		cd $(WORK_DIR) && $(WOLF_SV_PARSER) $(WOLF_JSON_EMIT_FLAGS) -o $(WOLF_JSON) $(WOLF_FILELIST); \
-		cd $(WORK_DIR) && $(WOLF_SV_PARSER) --load-json $(WOLF_JSON) $(WOLF_JSON_LOAD_FLAGS) -o $(WOLF_EMITTED_SV); \
-	else \
-		cd $(WORK_DIR) && $(WOLF_SV_PARSER) $(WOLF_EMIT_FLAGS) -o $(WOLF_EMITTED_SV) $(WOLF_FILELIST); \
-	fi
+	@echo "  [THead-smart] wolvrix start (emit)"
+	@cd $(WORK_DIR) && \
+		BUILD_DIR="$(WOLVRIX_BUILD_DIR)" \
+		CODE_BASE_PATH="$(CODE_BASE_PATH)" \
+		WOLF_JSON_ROUNDTRIP="$(WOLF_JSON_ROUNDTRIP)" \
+		$(WOLVRIX_BIN) -f "$(WOLVRIX_TCL)"
 
 buildVerilator:
 	@mkdir -p $(CCACHE_DIR)
+	@echo "  [THead-smart] verilator build start"
 	@cp ./logical/tb/Makefile_obj $(WORK_DIR)/Makefile_obj
 	@cd $(WORK_DIR) && make -j -C obj_dir -f ../Makefile_obj
 cleansim:
@@ -245,6 +236,7 @@ cleancase:
 ################################################################################
 # Execute one case
 runVerilator:
+	@echo "  [THead-smart] emu start"
 	@cd $(WORK_DIR) && C910_SIM_MAX_CYCLE=$(C910_SIM_MAX_CYCLE) C910_WAVEFORM=$(C910_WAVEFORM) obj_dir/Vsim_top
 
 runcase:
@@ -266,6 +258,7 @@ else
         else
             ifneq (,$(filter $(SIM),verilator verilator_ref))
 		make buildVerilator
+		@echo "  [THead-smart] emu start"
 		cd $(WORK_DIR) && C910_SIM_MAX_CYCLE=$(C910_SIM_MAX_CYCLE) C910_WAVEFORM=$(C910_WAVEFORM) C910_WAVEFORM_PATH=$(C910_WAVEFORM_PATH) obj_dir/Vsim_top
             else
 	        cd $(WORK_DIR) && vvp xuantie_core.vvp 
