@@ -322,7 +322,7 @@ help:
 	@echo "    make runcase CASE=dhry SIM=nc   : run case 'dhry' (by nc withtout dump) "; 
 	@echo "    make runcase CASE=dhry DUMP=on  : run case 'dhry' with dump "; 
 	@echo "    make runcase CASE=coremark SIM=verilator THREADS=8  : run case 'coremark' without dump (by verilator) with 8 threads";
-	@echo "    make runcase CASE=coremark SIM=verilator_ref THREADS=8 : run case 'coremark' without wolvrix-cli (verilator RTL reference)";
+	@echo "    make runcase CASE=coremark SIM=verilator_ref THREADS=8 : run case 'coremark' without wolvrix (verilator RTL reference)";
 	@echo "    make runcase CASE=coremark SIM=verilator C910_WAVEFORM=1 C910_SIM_MAX_CYCLE=10000 : run with FST waveform and 10000 cycle limit";
 	@echo "    make cleanVerilator                          : clean the verilator generated file before Verilator operations";
 	@echo "    make compile SIM=verilator DUMP=on THREADS=8 : run compile with dump (by Verilator with dump) with 8 threads";
