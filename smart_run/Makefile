@@ -34,7 +34,6 @@ WOLF_TOP := sim_top
 WORK_DIR ?= $(CURDIR)/work
 WOLF_EMIT_DIR ?= $(WOLVRIX_BUILD_DIR)/c910/wolf_emit
 WOLF_EMITTED_SV ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.sv
-WOLF_JSON_ROUNDTRIP ?= 0
 WOLF_LOG ?= warn
 WOLF_TIMER ?= 0
 # WOLF_LOG / WOLF_TIMER are currently unused by wolvrix.tcl
@@ -189,7 +188,6 @@ wolf_emit:
 	@cd $(WORK_DIR) && \
 		BUILD_DIR="$(WOLVRIX_BUILD_DIR)" \
 		CODE_BASE_PATH="$(CODE_BASE_PATH)" \
-		WOLF_JSON_ROUNDTRIP="$(WOLF_JSON_ROUNDTRIP)" \
 		$(WOLVRIX_BIN) -f "$(WOLVRIX_TCL)"
 
 buildVerilator:
@@ -200,6 +198,7 @@ buildVerilator:
 cleansim:
 	@cd $(WORK_DIR) && rm -rf simv* csrc ucli.key *.vcs.log novas_dump.log *.fsdb
 cleanVerilator:
+	@mkdir -p $(WORK_DIR)
 	@cd $(WORK_DIR) && rm -rf obj_dir/
 
 ################################################################################

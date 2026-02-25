@@ -25,11 +25,9 @@ eval read_sv $readArgs
 set passList "xmr-resolve const-fold redundant-elim memory-init-check dead-code-elim stats"
 foreach pass $passList { transform $pass }
 
-if {[getenv "WOLF_JSON_ROUNDTRIP" "0"] eq "1"} {
-    set jsonPath [file join $outputDir "${topName}_wolf.json"]
-    write_json -o $jsonPath
-    close_design
-    read_json $jsonPath
-}
+set jsonPath [file join $outputDir "${topName}_wolf.json"]
+write_json -o $jsonPath
+close_design
+read_json $jsonPath
 
 write_sv -o $emittedSv
