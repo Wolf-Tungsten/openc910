@@ -26,17 +26,17 @@ DUMP = off
 THREADS = 4
 SMART_RUN_DIR := $(CURDIR)
 VERILATOR ?= $(or $(shell echo $$VERILATOR),verilator)
-WOLVRIX_BIN ?= $(abspath $(CURDIR)/../../../../build/bin/wolvrix)
-WOLVRIX_TCL ?= $(abspath $(SMART_RUN_DIR)/wolvrix.tcl)
+PYTHON ?= python3
+WOLVRIX_PY ?= $(abspath $(SMART_RUN_DIR)/wolvrix_c910_emit.py)
 REPO_ROOT ?= $(abspath $(SMART_RUN_DIR)/../../../..)
 WOLVRIX_BUILD_DIR ?= $(if $(BUILD_DIR),$(abspath $(if $(filter /%,$(BUILD_DIR)),$(BUILD_DIR),$(REPO_ROOT)/$(BUILD_DIR))),$(REPO_ROOT)/build)
 WOLF_TOP := sim_top
 WORK_DIR ?= $(CURDIR)/work
-WOLF_EMIT_DIR ?= $(WOLVRIX_BUILD_DIR)/c910/wolf_emit
+WOLF_EMIT_DIR ?= $(WOLVRIX_BUILD_DIR)/c910/wolvrix_emit
 WOLF_EMITTED_SV ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.sv
 WOLF_LOG ?= warn
 WOLF_TIMER ?= 0
-# WOLF_LOG / WOLF_TIMER are currently unused by wolvrix.tcl
+# WOLF_LOG / WOLF_TIMER are currently unused by wolvrix.py
 VERILATOR_REF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
 VERILATOR_REF_CPP ?= $(SMART_RUN_DIR)/logical/tb/tb_c910.cpp
 
@@ -149,8 +149,8 @@ else
 endif
 
 compile:
-	@echo "  [THead-smart] Compiling smart now ... "
-	@echo "  [THead-smart] SIM = $(SIM)"
+	@echo "[THead-smart] Compiling smart now ... "
+	@echo "[THead-smart] SIM = $(SIM)"
 ifeq ($(SIM), vcs)
 	@make -s cleansim
 	@cd $(WORK_DIR) && vcs $(SIMULATOR_OPT) $(TIMESCALE) $(SIMULATOR_DEF) $(SIM_FILELIST) $(SIM_DUMP) $(SIMULATOR_LOG) $(SIMULATOR_POWER_OPT) 
@@ -163,14 +163,14 @@ else
         else
         ifeq ($(SIM), verilator)
 	      @make -s wolf_emit
-	      @echo "  [THead-smart] verilator start (compile)"
+	      @echo "[THead-smart] verilator start (compile)"
 	      @cd $(WORK_DIR) && $(VERILATOR) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
             else
             ifeq ($(SIM), verilator_ref)
-	      @echo "  [THead-smart] verilator start (compile)"
+	      @echo "[THead-smart] verilator start (compile)"
 	      @cd $(WORK_DIR) && $(VERILATOR) $(SIMULATOR_OPT) $(SIMULATOR_DEF) $(SIMULATOR_LOG) $(VERILATOR_TRACE_FLAGS) $(SIM_FILELIST) $(SIM_DUMP)
             else
-	      @echo "  [THead-smart] Please specify SIM = vcs to use VCS, or SIM = nc ,or SIM = verilator or SIM = verilator_ref to use Verilator ..."
+	      @echo "[THead-smart] Please specify SIM = vcs to use VCS, or SIM = nc ,or SIM = verilator or SIM = verilator_ref to use Verilator ..."
             endif
             endif
         endif
@@ -178,21 +178,20 @@ else
 endif 
 
 wolf_emit:
-	@if [ ! -x "$(WOLVRIX_BIN)" ]; then \
-		echo "  [THead-smart] wolvrix not found: $(WOLVRIX_BIN)"; \
-		echo "  [THead-smart] Build it from repo root: cmake -S . -B build && cmake --build build --target wolvrix"; \
+	@if [ ! -f "$(WOLVRIX_PY)" ]; then \
+		echo "[THead-smart] wolvrix emit script not found: $(WOLVRIX_PY)"; \
 		exit 1; \
 	fi
 	@mkdir -p $(WOLF_EMIT_DIR)
-	@echo "  [THead-smart] wolvrix start (emit)"
+	@echo "[THead-smart] wolvrix start (emit)"
 	@cd $(WORK_DIR) && \
 		BUILD_DIR="$(WOLVRIX_BUILD_DIR)" \
 		CODE_BASE_PATH="$(CODE_BASE_PATH)" \
-		$(WOLVRIX_BIN) -f "$(WOLVRIX_TCL)"
+		$(PYTHON) "$(WOLVRIX_PY)"
 
 buildVerilator:
 	@mkdir -p $(CCACHE_DIR)
-	@echo "  [THead-smart] verilator build start"
+	@echo "[THead-smart] verilator build start"
 	@cp ./logical/tb/Makefile_obj $(WORK_DIR)/Makefile_obj
 	@cd $(WORK_DIR) && make -j -C obj_dir -f ../Makefile_obj
 cleansim:
@@ -235,7 +234,7 @@ cleancase:
 ################################################################################
 # Execute one case
 runVerilator:
-	@echo "  [THead-smart] emu start"
+	@echo "[THead-smart] emu start"
 	@cd $(WORK_DIR) && C910_SIM_MAX_CYCLE=$(C910_SIM_MAX_CYCLE) C910_WAVEFORM=$(C910_WAVEFORM) obj_dir/Vsim_top
 
 runcase:
@@ -257,7 +256,7 @@ else
         else
             ifneq (,$(filter $(SIM),verilator verilator_ref))
 		make buildVerilator
-		@echo "  [THead-smart] emu start"
+		@echo "[THead-smart] emu start"
 		cd $(WORK_DIR) && C910_SIM_MAX_CYCLE=$(C910_SIM_MAX_CYCLE) C910_WAVEFORM=$(C910_WAVEFORM) C910_WAVEFORM_PATH=$(C910_WAVEFORM_PATH) obj_dir/Vsim_top
             else
 	        cd $(WORK_DIR) && vvp xuantie_core.vvp 
