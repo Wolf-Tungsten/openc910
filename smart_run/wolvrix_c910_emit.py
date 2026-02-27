@@ -4,7 +4,6 @@ import os
 import sys
 import time
 from pathlib import Path
-
 import wolvrix
 
 
@@ -41,18 +40,25 @@ design = wolvrix.read_sv(
 )
 log(f"read_sv done {int((time.perf_counter() - start) * 1000)}ms")
 
-for pass_name in [
-    "xmr-resolve",
-    "const-fold",
-    "redundant-elim",
-    "memory-init-check",
-    "dead-code-elim",
-    "stats",
-]:
+passes = [
+    ("xmr-resolve", []),
+    ("multidriven-guard", []),
+    ("blackbox-guard", []),
+    ("hier-flatten", ["-sym-protect", "hierarchy"]),
+    ("const-fold", []),
+    ("redundant-elim", []),
+    ("memory-init-check", []),
+    ("dead-code-elim", []),
+    ("stats", []),
+]
+log("pipeline start")
+pipeline_start = time.perf_counter()
+for pass_name, args in passes:
     start = time.perf_counter()
     log(f"pass {pass_name} start")
-    design.run_pass(pass_name)
+    design.run_pass(pass_name, args=args)
     log(f"pass {pass_name} done {int((time.perf_counter() - start) * 1000)}ms")
+log(f"pipeline done {int((time.perf_counter() - pipeline_start) * 1000)}ms")
 
 start = time.perf_counter()
 log("write_json start")
