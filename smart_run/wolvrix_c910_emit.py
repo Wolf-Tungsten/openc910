@@ -21,7 +21,7 @@ filelist = script_dir / "logical" / "filelists" / "sim_wolf.fl"
 
 output_dir.mkdir(parents=True, exist_ok=True)
 
-log_level = os.environ.get("WOLF_LOG", "warn")
+log_level = os.environ.get("WOLF_LOG", "info")
 
 top_name = "sim_top"
 emitted_sv = output_dir / f"{top_name}_wolf.sv"
@@ -33,10 +33,13 @@ log(f"output sv: {emitted_sv}")
 
 start = time.perf_counter()
 log("read_sv start")
-design = wolvrix.read_sv(
+design, _read_diags = wolvrix.read_sv(
     None,
     slang_args=["-f", str(filelist), "--top", top_name],
     log_level=log_level,
+    diagnostics="warn",
+    print_diagnostics_level="warn",
+    raise_diagnostics_level="error",
 )
 log(f"read_sv done {int((time.perf_counter() - start) * 1000)}ms")
 
@@ -44,7 +47,10 @@ passes = [
     ("xmr-resolve", []),
     ("multidriven-guard", []),
     ("blackbox-guard", []),
+    ("latch-transparent-read", []),
+    ("slice-index-const", []),
     ("hier-flatten", ["-sym-protect", "hierarchy"]),
+    ("comb-loop-elim", []),
     ("simplify", []),
     ("memory-init-check", []),
     ("stats", []),
@@ -54,7 +60,14 @@ pipeline_start = time.perf_counter()
 for pass_name, args in passes:
     start = time.perf_counter()
     log(f"pass {pass_name} start")
-    design.run_pass(pass_name, args=args)
+    design.run_pass(
+        pass_name,
+        args=args,
+        diagnostics="warn",
+        log_level=log_level,
+        print_diagnostics_level="warn",
+        raise_diagnostics_level="error",
+    )
     log(f"pass {pass_name} done {int((time.perf_counter() - start) * 1000)}ms")
 log(f"pipeline done {int((time.perf_counter() - pipeline_start) * 1000)}ms")
 

@@ -34,7 +34,7 @@ WOLF_TOP := sim_top
 WORK_DIR ?= $(CURDIR)/work
 WOLF_EMIT_DIR ?= $(WOLVRIX_BUILD_DIR)/c910/wolvrix_emit
 WOLF_EMITTED_SV ?= $(WOLF_EMIT_DIR)/$(WOLF_TOP)_wolf.sv
-WOLF_LOG ?= warn
+WOLF_LOG ?= info
 WOLF_TIMER ?= 0
 # WOLF_LOG / WOLF_TIMER are currently unused by wolvrix.py
 VERILATOR_REF_FILELIST ?= -f $(SMART_RUN_DIR)/logical/filelists/sim_wolf.fl
