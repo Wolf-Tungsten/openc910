@@ -37,8 +37,8 @@ design, _read_diags = wolvrix.read_sv(
     None,
     slang_args=["-f", str(filelist), "--top", top_name],
     log_level=log_level,
-    diagnostics="warn",
-    print_diagnostics_level="warn",
+    diagnostics="info",
+    print_diagnostics_level="info",
     raise_diagnostics_level="error",
 )
 log(f"read_sv done {int((time.perf_counter() - start) * 1000)}ms")
@@ -63,9 +63,9 @@ for pass_name, args in passes:
     design.run_pass(
         pass_name,
         args=args,
-        diagnostics="warn",
+        diagnostics="info",
         log_level=log_level,
-        print_diagnostics_level="warn",
+        print_diagnostics_level="info",
         raise_diagnostics_level="error",
     )
     log(f"pass {pass_name} done {int((time.perf_counter() - start) * 1000)}ms")
